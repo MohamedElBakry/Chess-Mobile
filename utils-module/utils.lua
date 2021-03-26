@@ -17,12 +17,11 @@ window_width, window_height = window.get_size()
 height = window_height / 8
 width = height
 print(width, height, xoffset, yoffset)
-x_offset = 1
 print("WINDOW SIZE:::::::::::::", window_width, window_height)
 
-function utils_px_to_xy(px)
+function utils.px_to_xy(px)
 	local x = math.floor(px[1] / width)
 	local y = math.floor(px[2] / height)
-	print(x, y)
-	return vmath.vector({x, y})
+	print(y, x)
+	return vmath.vector({y, x})
 end

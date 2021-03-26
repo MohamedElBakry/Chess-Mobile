@@ -8,6 +8,11 @@
 1. Open Game Art Background? Or Predownloaded background
 
 # Implement Piece Click Functionality
-1. Check bounds of piece vs mouse click pos
+Store pieces in 2D array.
+On click, we have 2 options: 
+1. Convert the touch/click position to the array indices to find the piece
+2. Check bounds of piece vs mouse click pos
+
+Which to do^^^^?
 
 # Game Rules
