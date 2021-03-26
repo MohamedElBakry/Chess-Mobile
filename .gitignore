@@ -1,6 +1,6 @@
 # Defold
 /.internal
-/build
+/build/default
 build
 .externalToolBuilders
 .DS_Store

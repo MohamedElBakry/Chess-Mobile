@@ -3,18 +3,23 @@
 go.property("name", hash(""))
 
 function init(self)
-	msg.post(".", "acquire_input_focus")
-	print("PIECE NAME: " .. self.name)
+	-- msg.post(".", "acquire_input_focus")
+	-- print("PIECE NAME: " .. self.name .. "at: " .. go.get_position())
 	-- go.set_scale("0.99", "#sprite")
 	end
 
-function on_input(self, action_id, action)
-	if action_id == hash("touch") and action.pressed then
-		-- print(self.name .. "is touched")
-		-- go.get("", "animation")
-		-- local p = go.get_position()
-		-- 	p.x = p.x + 125
-	-- 	-- p.y = p.y + 175
-	-- 	go.set_position(p)
-	end
-end
+-- function on_input(self, action_id, action)
+-- 	if action_id == hash("touch") and action.pressed then
+-- 		local pos = go.get_position()
+-- 		
+-- 		-- Get the click/touch position
+-- 		
+-- 		-- print(self.name .. "is touched")
+-- 		-- go.get("", "animation")
+-- 		-- local p = go.get_position()
+-- 		-- 	p.x = p.x + 125
+-- 	-- 	-- p.y = p.y + 175
+-- 	-- 	go.set_position(p)
+-- 	end
+-- end
+-- 
