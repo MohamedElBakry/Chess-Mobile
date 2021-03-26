@@ -1,0 +1,63 @@
+piece_names = {"king", "queen", "rook", "bishop", "knight", "pawn"}
+first_rank_pieces = {"rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"}
+COLOURS = {"black", "white"}
+SQUARE_SIZE = 250
+SCALE = 0.45
+SPRITE_SIZE = 500
+
+function init(self)
+	print(type(vmath.vector3(10, 1, 0)))
+
+	-- setup random seed for later
+	math.randomseed(os.time())
+	
+	-- Initial piece setup 
+	local props
+	local piece_id
+	-- Iterate over the pieces and create the first rank for black and white respectively
+	local r_pos = vmath.vector3()
+	for _, colour in ipairs(COLOURS) do
+		
+		for i, piece_name in ipairs(first_rank_pieces) do
+
+			-- Set the piece position, for white and black
+			r_pos.x = (i - 1 + 0.5) * SQUARE_SIZE
+			if colour == "white" then
+				r_pos.y = SQUARE_SIZE * 0.5 -- Y as the 1st rank from the bottom (0th Index hence 0.5)
+			else
+				r_pos.y = SQUARE_SIZE * 7.5  -- Y as the 8th rank from the bottom (7th Index)
+			end
+			
+			-- Set the piece object property to be the pi
+			props = { name=hash(piece_name..colour) }
+			piece_id = factory.create("#piece_factory", r_pos, nil, props)
+
+			-- Set the sprite 'animation' (image) scale
+			go.set_scale(SCALE, piece_id)
+			-- Set the animation (image) by (name + colour)
+			msg.post(piece_id, "play_animation", { id=hash("chess-"..piece_name.."-"..colour) })
+		end
+	end
+
+	-- Add the pawns for white and black 0 to 7 inclusive
+	for _, colour in ipairs(COLOURS) do
+		for i = 0, 7 do
+			-- Set the position
+			r_pos.x = (i + 0.5) * SQUARE_SIZE
+			r_pos.y = SQUARE_SIZE * 1.5  -- Y as the 2nd rank (1st Index) 
+			if colour == "black" then
+				r_pos.y = SQUARE_SIZE * 6.5  -- Y as the 7th rank (and 6th Index)
+			end
+			
+			-- Set the property
+			props = {name=hash("pawn" .. colour)}
+			piece_id = factory.create("#piece_factory", r_pos, nil, props)
+
+			-- Set the scale
+			go.set_scale(SCALE - 0.04, piece_id)
+			-- Set the animation (except for black as the default animation/image is a black pawn)
+			msg.post(piece_id, "play_animation", { id=hash("chess-".."pawn".."-"..colour)})
+		end
+	end
+end
+
