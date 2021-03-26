@@ -1,6 +1,7 @@
 # Defold
 /.internal
 /build
+build
 .externalToolBuilders
 .DS_Store
 Thumbs.db
@@ -9,6 +10,7 @@ Thumbs.db
 .project
 .cproject
 builtins
+
 
 # Compiled Lua sources
 luac.out
