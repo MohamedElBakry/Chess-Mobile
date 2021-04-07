@@ -1,25 +1,36 @@
 require "utils-module.utils"
 
+local piece_array = {}
+
 function init(self)
-	msg.post(".", "acquire_input_focus")
-	-- msg.post("@render:", "use_fixed_fit_projection", { near = -1, far = 1, zoom = 0.2 })
+	-- msg.post(".", "acquire_input_focus")
 	-- msg.post("#board", "play_animation", {id = hash("chess-king-white")} ) -- Set a sprite's animation
 	
 end
 
 function on_message(self, message_id, message)
-	print(message_id, message.id)
+	print("MESSAGE:", message_id, message.id)
+	if message_id == hash("piece_array") then
+		piece_array = message.id
+	end
+	-- print(message.id[1][1])
 	
 end
 
+
+-- NEED TO BAKE PIECE NAME INTO GO NAME TO DIFFERNTIATE MORE EASILY
 function on_input(self, action_id, action)
 	if action_id == hash("touch") and action.pressed then
 		print("Touch!")
 
-		-- utils.test()
 		-- -- print(utils_px_to_xy(action.x, action.y))
-		utils.px_to_xy({action.screen_x, action.screen_y})
+		local pos = utils.px_to_xy({action.screen_x, action.screen_y})
+		print(piece_array[pos[1]][pos[2]])
 		print(action.screen_x, action.screen_y)
+
+		-- Move the clicked piece 1 space forward if white, and 1 down if black
+		local clicked_go = piece_array[pos[1]][pos[2]]
 		
+		-- If an actual piece is clicked/tapped
 	end
 end

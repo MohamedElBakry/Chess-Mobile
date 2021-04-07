@@ -39,11 +39,14 @@ shared_state = 1
 [physics]
 gravity_y = -1000.0
 scale = 0.01
+debug = 1
+max_collisions = 128
 
 [display]
 high_dpi = 0
 fullscreen = 0
-width = 960
-height = 960
+width = 1000
+height = 1000
 display_device_info = 0
+vsync = 0
 

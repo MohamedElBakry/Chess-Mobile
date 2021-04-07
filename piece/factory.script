@@ -8,6 +8,11 @@ piece_array = {}
 
 function init(self)
 
+	-- Set up the array
+	for i = 1, 8 do
+		piece_array[i] = {}
+	end
+
 	-- setup random seed for later
 	math.randomseed(os.time())
 	
@@ -61,6 +66,31 @@ function init(self)
 	end
 
 	-- Represent the pieces in an array/table
+
+	-- Black and white first row
+	for i, piece_name in ipairs(first_rank_pieces) do
+		piece_array[1][i] = "chess-"..piece_name.."-".."black"
+		piece_array[8][i] = "chess-"..piece_name.."-".."white"
+	end
+
+	-- White and Black pawns
+	for i = 1, 8 do
+		piece_array[2][i] = "chess-".."pawn".."-".."black"
+		piece_array[7][i] = "chess-".."pawn".."-".."white"
+		
+	end
+
+	-- msg.post(receiver, message_id)
 	
+	msg.post("/go_board#main", "piece_array", {id=piece_array})
+	
+
+	-- pprint(piece_array)
+	for x, v in ipairs(piece_array) do
+		for y, v2 in ipairs(v) do
+			print(x, y, v2)
+		end
+	end
+
 end
 
