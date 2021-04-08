@@ -1,6 +1,8 @@
 local rendercam = require "rendercam.rendercam"
+require "utils-module.utils"
 
 SCALE = 0.45
+SQUARE_SIZE = 250
 function init(self)
 
 	-- The 'acquire_input_focus' message directs this cursor GameObject to 
@@ -67,6 +69,17 @@ function on_input(self, action_id, action)
 			-- local s1 = vmath.vector3(1.0, 1.0, 1.0)
 			local s1 = SCALE
 			go.set_scale(s1, self.collision_id)
+
+			-- Set the position to be the centre of the square a piece is dragged into
+			-- Get the board coordinates
+			local board_coords = utils.px_to_xy({action.x, action.y})
+			print(board_coords[1], board_coords[2])
+			
+			-- Multiply them by the square size to find the x y pos
+			local y = (utils.arr_coords[board_coords[1]] - 1 + 0.5) * SQUARE_SIZE  -- Convert back from array coordinates to true coordiantes
+			local x = (board_coords[2] - 1 + 0.5) * SQUARE_SIZE
+			print(x, y)
+			go.set_position(vmath.vector3(x, y, 0), self.collision_id)
 		end
 
 		-- Upon a Click/Touch -- if the cursor has collided with another GameObject and
