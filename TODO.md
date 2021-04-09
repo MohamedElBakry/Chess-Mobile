@@ -1,12 +1,12 @@
 # TODO Chess Project
 
-##
+## Idea
 Factory sends Piece Array --> Cursor GO --> On input change --> main.script
 
 ## TODO
 1. Change Background
-2. Implement piece click functionality
-3. Game Rules
+2. Game Rules
+3. Maintain pawn scale difference from other pieces when dropping after dragging
 
 ## Change Background
 1. Open Game Art Background? Or Predownloaded background

@@ -1,7 +1,5 @@
--- Put functions in this file to use them in several other scripts.
--- To get access to the functions, you need to put:
--- require "my_directory.my_file"
--- in any script using the functions.
+-- Constants
+SQUARE_SIZE = 250
 
 -- Set up a namespace
 utils = utils or {}
@@ -32,3 +30,9 @@ function utils.get_equivalent(x_index, y_index)
 end
 
 -- print(utils.get_equivalent(2, 1), utils.get_equivalent(2, 2), utils.get_equivalent(5, 7))
+
+-- Make a function to get the xy coordinates from the board coordinates? (Reverse of utils.px_to_xy(px)) 
+function utils.get_px_from(board_coord)
+	return (board_coord - 0.5) * SQUARE_SIZE
+end
+print(utils.get_px_from(7))	

@@ -1,9 +1,12 @@
-piece_names = {"king", "queen", "rook", "bishop", "knight", "pawn"}
-first_rank_pieces = {"rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"}
+require "utils-module.utils"
+
 COLOURS = {"black", "white"}
 SQUARE_SIZE = 250
 SCALE = 0.45
 SPRITE_SIZE = 500
+
+piece_names = {"king", "queen", "rook", "bishop", "knight", "pawn"}
+first_rank_pieces = {"rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"}
 piece_array = {}
 
 function init(self)
@@ -15,24 +18,24 @@ function init(self)
 
 	-- setup random seed for later
 	math.randomseed(os.time())
-	
+
 	-- Initial piece setup 
 	local props
 	local piece_id
 	-- Iterate over the pieces and create the first rank for black and white respectively
 	local r_pos = vmath.vector3()
-	
+
 	for _, colour in ipairs(COLOURS) do
 		for i, piece_name in ipairs(first_rank_pieces) do
 
 			-- Set the piece position, for white and black
-			r_pos.x = (i - 1 + 0.5) * SQUARE_SIZE
+			r_pos.x = utils.get_px_from(i)
 			if colour == "white" then
-				r_pos.y = SQUARE_SIZE * 0.5 -- Y as the 1st rank from the bottom (0th Index hence 0.5)
+				r_pos.y = utils.get_px_from(1) -- Y as the 1st rank from the bottom (0th Index hence 0.5)
 			else
-				r_pos.y = SQUARE_SIZE * 7.5  -- Y as the 8th rank from the bottom (7th Index)
+				r_pos.y = utils.get_px_from(8) -- Y as the 8th rank from the bottom (7th Index)
 			end
-			
+
 			-- Set the piece object property to be the pi
 			props = { name=hash(piece_name..colour) }
 			piece_id = factory.create("#piece_factory", r_pos, nil, props)
@@ -44,21 +47,21 @@ function init(self)
 		end
 	end
 
-	-- Add the pawns for white and black 0 to 7 inclusive
+	-- Add the pawns for white and black 1 to 8 inclusive
 	for _, colour in ipairs(COLOURS) do
-		for i = 0, 7 do
+		for i = 1, 8 do
 			-- Set the position
-			r_pos.x = (i + 0.5) * SQUARE_SIZE
-			r_pos.y = SQUARE_SIZE * 1.5  -- Y as the 2nd rank (1st Index) 
+			r_pos.x = utils.get_px_from(i)
+			r_pos.y = utils.get_px_from(2) -- Y as the 2nd rank (1st Index) 
 			if colour == "black" then
-				r_pos.y = SQUARE_SIZE * 6.5  -- Y as the 7th rank (and 6th Index)
+				r_pos.y = utils.get_px_from(7) -- Y as the 7th rank (and 6th Index)
 			end
-			
+
 			-- Set the property
 			props = {name=hash("pawn" .. colour)}
 			piece_id = factory.create("#piece_factory", r_pos, nil, props)
 
-			-- Set the scale
+			-- Set the scale for the pawn(s)
 			go.set_scale(SCALE - 0.04, piece_id)
 			-- Set the animation (except for black as the default animation/image is a black pawn)
 			msg.post(piece_id, "play_animation", { id=hash("chess-".."pawn".."-"..colour)})
@@ -77,13 +80,13 @@ function init(self)
 	for i = 1, 8 do
 		piece_array[2][i] = "chess-".."pawn".."-".."black"
 		piece_array[7][i] = "chess-".."pawn".."-".."white"
-		
+
 	end
 
 	-- msg.post(receiver, message_id)
-	
+
 	msg.post("/go_board#main", "piece_array", {id=piece_array})
-	
+
 
 	-- pprint(piece_array)
 	for x, v in ipairs(piece_array) do

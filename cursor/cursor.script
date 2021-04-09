@@ -19,9 +19,9 @@ end
 -- Called every frame
 function update(self, dt)
 	-- Clear?
--- 	msg.post("@render:", "clear_color",
--- 	{ color = vmath.vector4(95 /256, 129 / 256, 161 / 256, 1 ) })
--- 
+	-- 	msg.post("@render:", "clear_color",
+	-- 	{ color = vmath.vector4(95 /256, 129 / 256, 161 / 256, 1 ) })
+	-- 
 
 	-- Nilify the collision id
 	self.collision_id = nil
@@ -74,10 +74,10 @@ function on_input(self, action_id, action)
 			-- Get the board coordinates
 			local board_coords = utils.px_to_xy({action.x, action.y})
 			print(board_coords[1], board_coords[2])
-			
+
 			-- Multiply them by the square size to find the x y pos
-			local y = (utils.arr_coords[board_coords[1]] - 1 + 0.5) * SQUARE_SIZE  -- Convert back from array coordinates to true coordiantes
-			local x = (board_coords[2] - 1 + 0.5) * SQUARE_SIZE
+			local y = utils.get_px_from(utils.arr_coords[board_coords[1]]) -- Convert back from array coordinates to true coordiantes
+			local x = utils.get_px_from(board_coords[2])
 			print(x, y)
 			go.set_position(vmath.vector3(x, y, 0), self.collision_id)
 		end
