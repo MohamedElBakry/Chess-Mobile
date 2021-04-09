@@ -1,11 +1,17 @@
 require "utils-module.utils"
+require "piece.piece"
 
 local piece_array = {}
 
 function init(self)
 	-- msg.post(".", "acquire_input_focus")
 	-- msg.post("#board", "play_animation", {id = hash("chess-king-white")} ) -- Set a sprite's animation
-	
+
+	-- local pawn = Piece:new(nil, "pw", {6, 1})
+	-- pawn.move({6, 3})
+	-- pawn.pos = {6, 5}
+	-- print(pawn.pos[1], pawn.pos[2])
+	-- print(pawn.get_position())
 end
 
 function on_message(self, message_id, message)
