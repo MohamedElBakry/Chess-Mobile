@@ -24,3 +24,11 @@ function utils.px_to_xy(px)
 	print(y, x)
 	return vmath.vector({y, x})
 end
+
+-- Gives the 1D equivalent index of a 2D array index
+-- E.g. (2, 1) --> 9; (2, 2) --> 10; ... (5, 7) --> 39
+function utils.get_equivalent(x_index, y_index)
+	return 8 * x_index - (8 - y_index)
+end
+
+-- print(utils.get_equivalent(2, 1), utils.get_equivalent(2, 2), utils.get_equivalent(5, 7))

@@ -35,14 +35,14 @@ function Piece:set_pos(pos)
 	self.pos = pos
 end
 
-p = Piece:new(nil, "pw", {6, 3}, false)
-p:set_pos({6, 5})
-print(p:get_pos())
-
-p:set_pos({7, 6})
-print(p:get_pos())
-p:move({7, 7})
-print(p.name, p.hasMoved)
+-- p = Piece:new(nil, "pw", {6, 3}, false)
+-- p:set_pos({6, 5})
+-- print(p:get_pos())
+-- 
+-- p:set_pos({7, 6})
+-- print(p:get_pos())
+-- p:move({7, 7})
+-- print(p.name, p.hasMoved)
 
 -- Example Usage
 -- pawn = Piece:new(nil, "pw", {6, 1})
