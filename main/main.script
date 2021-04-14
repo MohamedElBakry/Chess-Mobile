@@ -1,5 +1,7 @@
 require "utils-module.utils"
 require "piece.piece"
+local rendercam = require "rendercam.rendercam"
+
 
 -- Source: lua-users wiki
 -- Function that clones a table and so we avoid the pass by reference error
@@ -56,17 +58,6 @@ function on_message(self, message_id, message)
 		-- local move_from = message.id[1]
 		go_id = message.id[1]
 
-		-- Get piece 
-		-- for i, row in ipairs(piece_array) do
-		-- 	for j, piece in ipairs(row) do
-		-- 		-- print(piece.id, go_id)
-		-- 		if piece.id == go_id then 
-		-- 			print("TRUEEEE")
-		-- 			move_from = {i, j}
-		-- 		end
-		-- 	end
-		-- end
-
 		-- Get piece
 		for x = 1, 8 do
 			for y = 1, 8 do
@@ -103,9 +94,13 @@ function on_message(self, message_id, message)
 			
 			-- Reflect this in the piece_array
 			piece_array[move_to[1]][move_to[2]] = piece
-			piece_array[move_from[1]][move_from[2]] = {}
+			piece_array[move_from[1]][move_from[2]] = nil
 			print(piece_array[move_to[1]][move_to[2]], piece_array[move_from[1]][move_from[2]])
 			
+		else
+			-- If the move is invalid, just take the piece back to the move_from location
+			local prev_pos = vmath.vector3(utils.get_px_from(move_from[2]), utils.get_px_from(utils.arr_coords[move_from[1]]), 0)
+			go.set_position(prev_pos, piece.id)
 		end
 	end
 	-- print(message.id[1][1])

@@ -44,20 +44,26 @@ function Piece:isValid(move, array)
 	local valid = false
 	
 	-- Pawn
+	-- If White
+	
 	if self.piece == "p" then
 		if self.colour == "w" then
 			
 			-- Compare current pos with new desired pos for capture patterns
 			-- If piece present in capture pattern square, then remove that piece -- IN MAIN?
 			local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
+			local landing_square_or_piece = array[move[1]][move[2]]
 
 			-- Capture check
-			-- if diff == 9 or diff == 7 or diff and array[move[1]][move[2]].colour ~= self.colour then
-			-- 	valid = true
+			if landing_square_or_piece ~= nil then
+				if diff == 9 or diff == 7 and landing_square_or_piece.colour ~= self.colour then
+					valid = true
+				end
+			end
 
 			-- Regular move check
 			-- 1 square forward
-			if diff == 8 then
+			if diff == 8 and landing_square_or_piece == nil then
 				valid = true
 			-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
 			-- First move can be 2 squares forward or 1 square
@@ -67,7 +73,6 @@ function Piece:isValid(move, array)
 			
 		end
 	end
-	-- If White
 	-- If Black
 	
 	return valid
