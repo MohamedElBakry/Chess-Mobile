@@ -1,4 +1,5 @@
 require "utils-module.utils"
+require "piece.piece"
 
 COLOURS = {"black", "white"}
 SQUARE_SIZE = 250
@@ -39,9 +40,11 @@ function init(self)
 			-- Set the piece object property to be the pi
 			props = { name=hash(piece_name..colour) }
 			piece_id = factory.create("#piece_factory", r_pos, nil, props)
+			-- print("PIECE ID: " .. piece_id)
 
 			-- Set the sprite 'animation' (image) scale
 			go.set_scale(SCALE, piece_id)
+			
 			-- Set the animation (image) by (name + colour)
 			msg.post(piece_id, "play_animation", { id=hash("chess-"..piece_name.."-"..colour) })
 		end
@@ -63,35 +66,44 @@ function init(self)
 
 			-- Set the scale for the pawn(s)
 			go.set_scale(SCALE - 0.04, piece_id)
+			
 			-- Set the animation (except for black as the default animation/image is a black pawn)
 			msg.post(piece_id, "play_animation", { id=hash("chess-".."pawn".."-"..colour)})
+
+			-- Fill the underlying array that will represent the game state
+			local p_name = "p" .. string.sub(colour, 1, 1)  -- Name will be "pb" or "pw"
+			if colour == "black" then
+				piece_array[2][i] = {nil, id=piece_id, name=p_name, pos={2, i}, hasMoved=false}
+			else
+				piece_array[7][i] = {nil, id=piece_id, name=p_name, pos={7, i}, hasMoved=false}
+			end
 		end
 	end
 
 	-- Represent the pieces in an array/table
 
 	-- Black and white first row
-	for i, piece_name in ipairs(first_rank_pieces) do
-		piece_array[1][i] = "chess-"..piece_name.."-".."black"
-		piece_array[8][i] = "chess-"..piece_name.."-".."white"
-	end
-
-	-- White and Black pawns
-	for i = 1, 8 do
-		piece_array[2][i] = "chess-".."pawn".."-".."black"
-		piece_array[7][i] = "chess-".."pawn".."-".."white"
-
-	end
+-- 	for i, piece_name in ipairs(first_rank_pieces) do
+-- 		piece_array[1][i] = "chess-"..piece_name.."-".."black"
+-- 		piece_array[8][i] = "chess-"..piece_name.."-".."white"
+-- 	end
+-- 
+-- 	-- White and Black pawns
+-- 	for i = 1, 8 do
+-- 		piece_array[2][i] = "chess-".."pawn".."-".."black"
+-- 		piece_array[7][i] = {name="pw", pos={7, i}, hasMoved=false}  -- Send 'class' data as a table then init the class on the other side 
+-- 		-- when sending it to main.
+-- 	end
 
 	-- msg.post(receiver, message_id)
 
 	msg.post("/go_board#main", "piece_array", {id=piece_array})
-
-
+	
+	piece_array[7][3]["hasMoved"] = true
 	-- pprint(piece_array)
 	for x, v in ipairs(piece_array) do
 		for y, v2 in ipairs(v) do
-			print(x, y, v2)
+			print(x, y, v2["name"], v2["hasMoved"])
 		end
 	end
 

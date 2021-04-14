@@ -1,23 +1,25 @@
--- Put functions in this file to use them in several other scripts.
--- To get access to the functions, you need to put:
--- require "my_directory.my_file"
--- in any script using the functions.
+require "utils-module.utils"
 
 -- [[ Pawn Class --]]
 
 -- Meta Class
-Piece = {name="", pos={}, hasMoved=false}
+Piece = {id="", name="", pos={}, hasMoved=false}
 
+-- ADD ID of GO
 -- Dervied Class
-function Piece:new(o, name, pos, hasMoved)
+function Piece:new(id, name, pos, hasMoved)
 	
-	o = o or {}
-	setmetatable({}, self)
+	-- o = o or {}
+	setmetatable({}, Piece)
 	
-	self.__index = self
+	-- self.__index = self
+	self.id = id
 	self.name = name
+	self.piece = string.sub(name, 1, 1)
+	self.colour = string.sub(name, 2, 2)
 	self.pos = pos
 	self.hasMoved = hasMoved
+	self.prevPos = {}
 	
 	return self
 end
@@ -35,8 +37,51 @@ function Piece:set_pos(pos)
 	self.pos = pos
 end
 
--- p = Piece:new(nil, "pw", {6, 3}, false)
+-- TODO this
+-- White Pawn taking pattern: 9 or 7 and opposing colour piece present there
+-- Black Pawn taking pattern: -9 or -7 and as above
+function Piece:isValid(move, array)
+	local valid = false
+	
+	-- Pawn
+	if self.piece == "p" then
+		if self.colour == "w" then
+			
+			-- Compare current pos with new desired pos for capture patterns
+			-- If piece present in capture pattern square, then remove that piece -- IN MAIN?
+			local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
+
+			-- Capture check
+			-- if diff == 9 or diff == 7 or diff and array[move[1]][move[2]].colour ~= self.colour then
+			-- 	valid = true
+
+			-- Regular move check
+			-- 1 square forward
+			if diff == 8 then
+				valid = true
+			-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
+			-- First move can be 2 squares forward or 1 square
+			elseif self.hasMoved == false and diff == 16 then
+				valid = true
+			end
+			
+		end
+	end
+	-- If White
+	-- If Black
+	
+	return valid
+end
+
+-- p = Piece:new(nil, "hash bla bla", "pw", {6, 3}, false)
+-- pprint(p.pos)
+-- pprint(p["pos"])
+-- print(p:get_pos())
+-- 
 -- p:set_pos({6, 5})
+-- pprint(p.pos, p["pos"], p:get_pos())
+
+
 -- print(p:get_pos())
 -- 
 -- p:set_pos({7, 6})

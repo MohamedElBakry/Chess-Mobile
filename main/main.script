@@ -1,10 +1,28 @@
 require "utils-module.utils"
 require "piece.piece"
 
+-- Source: lua-users wiki
+-- Function that clones a table and so we avoid the pass by reference error
+function deepcopy(orig)
+	local orig_type = type(orig)
+	local copy
+	if orig_type == 'table' then
+		copy = {}
+		for orig_key, orig_value in next, orig, nil do
+			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+		end
+		setmetatable(copy, deepcopy(getmetatable(orig)))
+	else -- number, string, boolean, etc
+		copy = orig
+	end
+	return copy
+end
+
+
 local piece_array = {}
 
 function init(self)
-	-- msg.post(".", "acquire_input_focus")
+	msg.post(".", "acquire_input_focus")
 	-- msg.post("#board", "play_animation", {id = hash("chess-king-white")} ) -- Set a sprite's animation
 end
 
@@ -12,6 +30,83 @@ function on_message(self, message_id, message)
 	print("MESSAGE:", message_id, message.id)
 	if message_id == hash("piece_array") then
 		piece_array = message.id
+		pprint("INITIAL ARRAY:", piece_array)
+
+		-- Why do all pieces have id instance31? 
+		-- Loop through the piece array and replace 'constructor' tables with Piece function-objects
+		for x, row in ipairs(piece_array) do
+			for y, piece_table in ipairs(row) do
+				-- print(piece_table["pos"][2])
+				-- pprint("PTABLE: ", piece_table)
+				local piece = Piece:new(piece_table["id"], piece_table["name"], piece_table["pos"], piece_table["hasMoved"])
+				-- pprint("PIECE: ", piece)
+				-- print(piece.id, piece_array[x][y]["id"] )
+
+				-- Replace the piece_table with the Piece function-object
+				piece_array[x][y] = deepcopy(piece)
+				-- print("ARRAY PIECE:", piece.id, piece_array[x][y].id, piece_array[x][y]["name"], piece_array[x][y].name, piece_array[x][y]:get_pos())
+			end
+		end
+	end
+
+	-- Move Validation
+	if message_id == hash("is_valid") then
+		-- pprint(piece_array)
+		move_from = {}
+		-- local move_from = message.id[1]
+		go_id = message.id[1]
+
+		-- Get piece 
+		-- for i, row in ipairs(piece_array) do
+		-- 	for j, piece in ipairs(row) do
+		-- 		-- print(piece.id, go_id)
+		-- 		if piece.id == go_id then 
+		-- 			print("TRUEEEE")
+		-- 			move_from = {i, j}
+		-- 		end
+		-- 	end
+		-- end
+
+		-- Get piece
+		for x = 1, 8 do
+			for y = 1, 8 do
+				if piece_array[x][y] ~= nil then
+					if piece_array[x][y].id == go_id then
+						move_from = {x, y}
+						print("TRUEEEEEEEEEEEEEEE")
+					end
+				end
+			end
+		end
+		
+		local move_to = message.id[2]
+		-- pprint(move_from, move_to)
+		
+		-- Why is move_from nil?
+		print("move_from: ", move_from[1], move_from[2])
+
+		-- Error check
+		if move_from[1] == nil then
+			print("MOVE FROM IS NIL")
+		end
+		
+		-- Get the piece
+		local piece = deepcopy(piece_array[move_from[1]][move_from[2]])
+		print("piece:", piece)
+		
+		valid = piece:isValid(move_to, piece_array)
+		print("VALIDITY: ", valid)
+		
+		-- If valid Piece:move(pos) and update piece_array
+		if valid then
+			piece:move(move_to)
+			
+			-- Reflect this in the piece_array
+			piece_array[move_to[1]][move_to[2]] = piece
+			piece_array[move_from[1]][move_from[2]] = {}
+			print(piece_array[move_to[1]][move_to[2]], piece_array[move_from[1]][move_from[2]])
+			
+		end
 	end
 	-- print(message.id[1][1])
 	
@@ -25,6 +120,7 @@ function on_input(self, action_id, action)
 
 		-- -- print(utils_px_to_xy(action.x, action.y))
 		local pos = utils.px_to_xy({action.screen_x, action.screen_y})
+		print(pos[1], pos[2], "--> " .. utils.get_equivalent(pos[1], pos[2]))
 		print(piece_array[pos[1]][pos[2]])
 		print(action.screen_x, action.screen_y)
 

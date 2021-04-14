@@ -31,8 +31,9 @@ end
 
 -- print(utils.get_equivalent(2, 1), utils.get_equivalent(2, 2), utils.get_equivalent(5, 7))
 
--- Make a function to get the xy coordinates from the board coordinates? (Reverse of utils.px_to_xy(px)) 
+-- Make a function to get the xy coordinates from the board coordinates (Reverse of utils.px_to_xy(px)) 
 function utils.get_px_from(board_coord)
 	return (board_coord - 0.5) * SQUARE_SIZE
 end
-print(utils.get_px_from(7))	
+
+-- print(utils.get_px_from(7))	
