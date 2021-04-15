@@ -40,7 +40,7 @@ function on_message(self, message_id, message)
 			for y, piece_table in ipairs(row) do
 				-- print(piece_table["pos"][2])
 				-- pprint("PTABLE: ", piece_table)
-				local piece = Piece:new(piece_table["id"], piece_table["name"], piece_table["pos"], piece_table["hasMoved"])
+				local piece = Piece:new(piece_table["id"], piece_table["name"], {x, y}, false)
 				-- pprint("PIECE: ", piece)
 				-- print(piece.id, piece_array[x][y]["id"] )
 
