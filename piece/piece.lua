@@ -22,6 +22,11 @@ function Piece:new(id, name, pos, hasMoved)
 	self.hasMoved = hasMoved
 	self.prevPos = {}
 	
+	-- self.valid_moves = {}
+
+	-- Knight: -15, -6, 10, 17, 15, 6, -10, -17
+	-- -17, -15, -10, -6, 6, 10, 15, 17
+	
 	return self
 end
 
@@ -49,43 +54,62 @@ function Piece:isValid(move, array)
 	
 	-- Pawn
 	if self.piece == "p" then
-		
-		moves = { 
-			capture_left=9, 
-			capture_right=7,
-			forward_one=8 
-		}
-
-		if self.colour == "b" then
-			for k, v in pairs(moves) do
-				moves[k] = -v
-			end
-		end
+		valid, flag = self:__isvalid_pawn(move, array, diff, landing_square_or_piece)
+	end
+	-- Knight
+	-- Etc.
 	
-		-- Compare current pos with new desired pos for capture patterns
-		-- If piece present in capture pattern square, then remove that piece -- IN MAIN?
+	return valid, flag
+end
 
-		-- Capture check
-		-- If there's a piece present of the opposite colour, then it's valid
-		if landing_square_or_piece ~= nil then
-			if diff == moves.capture_right or diff == moves.capture_left and landing_square_or_piece.colour ~= self.colour then
-				valid = true
-				flag = "capture"
-			end
+function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
+	local valid = false
+	local flag = nil
+	
+	moves = { 
+		capture_left=9, 
+		capture_right=7,
+		forward_one=8 
+	}
+
+	if self.colour == "b" then
+		for k, v in pairs(moves) do
+			moves[k] = -v
 		end
-
-		-- Regular move check
-		if diff == moves.forward_one and landing_square_or_piece == nil then
-			valid = true
-		-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
-		-- First move can be 2 squares forward or 1 square
-		elseif self.hasMoved == false and diff == moves.forward_one * 2 then
-			valid = true
-		end	
 	end
 
+	-- Compare current pos with new desired pos for capture patterns
+	-- If piece present in capture pattern square, then remove that piece -- IN MAIN?
+
+	-- Capture check
+	-- If there's a piece present of the opposite colour, then it's valid
+	if landing_square_or_piece ~= nil then
+		if diff == moves.capture_right or diff == moves.capture_left and landing_square_or_piece.colour ~= self.colour then
+			valid = true
+			flag = "capture"
+		end
+	end
+
+	-- Regular move check
+	if diff == moves.forward_one and landing_square_or_piece == nil then
+		valid = true
+		-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
+		-- First move can be 2 squares forward or 1 square
+	elseif self.hasMoved == false and diff == moves.forward_one * 2 then
+		valid = true
+	end
 	-- En passant
 	-- Diagonal capture behind a pawn directly to the left or right, that just moved 2 squares forward
 	
 	return valid, flag
 end
+
+function __isvalid_knight(move, array)
+	local valid = false
+	local flag = nil
+	return valid, flag
+end
+
+
+
+

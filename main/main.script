@@ -109,7 +109,6 @@ function on_message(self, message_id, message)
 			go.set_position(prev_pos, piece.id)
 		end
 	end
-	-- print(message.id[1][1])
 	
 end
 

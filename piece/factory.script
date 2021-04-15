@@ -40,7 +40,6 @@ function init(self)
 			-- Set the piece object property to be the pi
 			props = { name=hash(piece_name..colour) }
 			piece_id = factory.create("#piece_factory", r_pos, nil, props)
-			-- print("PIECE ID: " .. piece_id)
 
 			-- Set the sprite 'animation' (image) scale
 			go.set_scale(SCALE, piece_id)
@@ -80,32 +79,7 @@ function init(self)
 		end
 	end
 
-	-- Represent the pieces in an array/table
-
-	-- Black and white first row
--- 	for i, piece_name in ipairs(first_rank_pieces) do
--- 		piece_array[1][i] = "chess-"..piece_name.."-".."black"
--- 		piece_array[8][i] = "chess-"..piece_name.."-".."white"
--- 	end
--- 
--- 	-- White and Black pawns
--- 	for i = 1, 8 do
--- 		piece_array[2][i] = "chess-".."pawn".."-".."black"
--- 		piece_array[7][i] = {name="pw", pos={7, i}, hasMoved=false}  -- Send 'class' data as a table then init the class on the other side 
--- 		-- when sending it to main.
--- 	end
-
-	-- msg.post(receiver, message_id)
-
 	msg.post("/go_board#main", "piece_array", {id=piece_array})
 	
-	piece_array[7][3]["hasMoved"] = true
-	-- pprint(piece_array)
-	for x, v in ipairs(piece_array) do
-		for y, v2 in ipairs(v) do
-			print(x, y, v2["name"], v2["hasMoved"])
-		end
-	end
-
 end
 
