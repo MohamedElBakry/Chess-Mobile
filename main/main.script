@@ -79,18 +79,24 @@ function on_message(self, message_id, message)
 		-- Error check
 		if move_from[1] == nil then
 			print("MOVE FROM IS NIL")
+			return
 		end
 		
 		-- Get the piece
 		local piece = deepcopy(piece_array[move_from[1]][move_from[2]])
 		print("piece:", piece)
 		
-		valid = piece:isValid(move_to, piece_array)
-		print("VALIDITY: ", valid)
+		valid, flag = piece:isValid(move_to, piece_array)
+		print("VALIDITY:", valid, "FLAG:", flag)
 		
 		-- If valid Piece:move(pos) and update piece_array
 		if valid then
+			if flag == "capture" then
+				local captured_go_id = piece_array[move_to[1]][move_to[2]].id
+				msg.post(captured_go_id, "disable")
+			end
 			piece:move(move_to)
+
 			
 			-- Reflect this in the piece_array
 			piece_array[move_to[1]][move_to[2]] = piece
