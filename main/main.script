@@ -103,6 +103,14 @@ function on_message(self, message_id, message)
 			-- If the move is invalid, just take the piece back to the move_from location
 			local prev_pos = vmath.vector3(utils.get_px_from(move_from[2]), utils.get_px_from(utils.arr_coords[move_from[1]]), 0)
 			go.set_position(prev_pos, piece.id)
+			
+			-- Centre the piece in case it glitches out and just hovers over the captured square
+			-- Put in function centre()
+			local pos =  vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
+			go.set_position(pos, piece.id)
+
+			-- Change to piece.scale
+			go.set_scale(0.45, piece.id)
 		end
 	end
 	

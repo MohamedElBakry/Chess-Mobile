@@ -26,6 +26,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.pos = pos
 	self.hasMoved = hasMoved
 	self.prevPos = {}
+	
 	-- TODO: add scale - different for pawn
 	-- self.valid_moves = {}
 
@@ -50,25 +51,21 @@ end
 function Piece:isValid(move, array)
 	local valid = false
 	local flag = nil
+	
+	-- Creating these functions may be costly
+	local valid_hash = {
+		["p"] = function(m, a, d, l) return self:__isvalid_pawn(m, a, d, l) end,
+		["n"] = function(m, a, d, l) return self:__isvalid_knight(m, a, d, l) end,
+		["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
+		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end
+	}
 
+	-- 
 	local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
 	local landing_square_or_piece = array[move[1]][move[2]]
 
-	-- TODO table system instead of 'if' chain so, valid, flag = __isvalid[self.piece](args)
-	-- Pawn
-	if self.piece == "p" then
-		valid, flag = self:__isvalid_pawn(move, array, diff, landing_square_or_piece)
-		
-	elseif self.piece == "n" then
-		valid, flag = self:__isvalid_knight(move, array, diff, landing_square_or_piece)
-		
-	elseif self.piece == "r" then
-		valid, flag= self:__isvalid_rook(move, array, diff, landing_square_or_piece)
-	end
-	-- Knight
-	-- Etc.
-	
-	return valid, flag
+	-- Dynamically get the appropriate move validation function, and returnt the results
+	return valid_hash[self.piece](move, array, diff, landing_square_or_piece)
 end
 
 function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
@@ -114,8 +111,7 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 end
 
 -- Knight Move Valid Checking
--- Knight: -15, -6, 10, 17, 15, 6, -10, -17
--- -17, -15, -10, -6, 6, 10, 15, 17
+-- Knight: -17, -15, -10, -6, 6, 10, 15, 17
 function Piece:__isvalid_knight(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -158,10 +154,8 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			end
 		end
 		
-		print("Vertical?")
 	elseif equiv <= upper and equiv >= lower then
 		valid = true
-		print("Horizontal")
 		-- Check the row for any pieces that stand between the rook and the desired end location
 		for y = 1, 8 do
 			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
@@ -175,9 +169,9 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 		end
 		
 	end
-	
+
+	-- 
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
-	
 	return valid, flag
 end
 
