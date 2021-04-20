@@ -162,6 +162,18 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 	elseif equiv <= upper and equiv >= lower then
 		valid = true
 		print("Horizontal")
+		-- Check the row for any pieces that stand between the rook and the desired end location
+		for y = 1, 8 do
+			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
+				local piece = array[move[1]][y]
+				if piece ~= nil then
+					print("PIECE IN BETWEEN:", piece.name)
+					valid = false
+					break
+				end
+			end
+		end
+		
 	end
 	
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
