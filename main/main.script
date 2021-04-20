@@ -22,6 +22,7 @@ end
 
 
 local piece_array = {}
+piece_class = {p=Piece, n=Knight, r=Piece, b=Piece, k=Piece, q=Piece}
 
 function init(self)
 	msg.post(".", "acquire_input_focus")
@@ -32,30 +33,24 @@ function on_message(self, message_id, message)
 	print("MESSAGE:", message_id, message.id)
 	if message_id == hash("piece_array") then
 		piece_array = message.id
-		pprint("INITIAL ARRAY:", piece_array)
+		-- pprint("INITIAL ARRAY:", piece_array)
 
-		-- Why do all pieces have id instance31? 
 		-- Loop through the piece array and replace 'constructor' tables with Piece function-objects
 		for x, row in ipairs(piece_array) do
 			for y, piece_table in ipairs(row) do
-				-- print(piece_table["pos"][2])
-				-- pprint("PTABLE: ", piece_table)
+				local p = string.sub(piece_table["name"], 1, 1)
+				local Class = piece_class[p] 
 				local piece = Piece:new(piece_table["id"], piece_table["name"], {x, y}, false)
-				-- pprint("PIECE: ", piece)
-				-- print(piece.id, piece_array[x][y]["id"] )
 
 				-- Replace the piece_table with the Piece function-object
 				piece_array[x][y] = deepcopy(piece)
-				-- print("ARRAY PIECE:", piece.id, piece_array[x][y].id, piece_array[x][y]["name"], piece_array[x][y].name, piece_array[x][y]:get_pos())
 			end
 		end
 	end
 
 	-- Move Validation
 	if message_id == hash("is_valid") then
-		-- pprint(piece_array)
 		move_from = {}
-		-- local move_from = message.id[1]
 		go_id = message.id[1]
 
 		-- Get piece
@@ -64,21 +59,15 @@ function on_message(self, message_id, message)
 				if piece_array[x][y] ~= nil then
 					if piece_array[x][y].id == go_id then
 						move_from = {x, y}
-						print("TRUEEEEEEEEEEEEEEE")
 					end
 				end
 			end
 		end
 		
 		local move_to = message.id[2]
-		-- pprint(move_from, move_to)
-		
-		-- Why is move_from nil?
-		print("move_from: ", move_from[1], move_from[2])
 
 		-- Error check
 		if move_from[1] == nil then
-			print("MOVE FROM IS NIL")
 			return
 		end
 		
@@ -97,8 +86,15 @@ function on_message(self, message_id, message)
 			end
 			piece:move(move_to)
 
+			-- Centre the piece in case it glitches out and just hovers over the captured square
+			-- Put in function centre()
+			local pos =  vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
+			go.set_position(pos, piece.id)
 			
-			-- Reflect this in the piece_array
+			-- Change to piece.scale
+			go.set_scale(0.45, piece.id)
+			
+			-- Reflect positional changes in the piece_array
 			piece_array[move_to[1]][move_to[2]] = piece
 			piece_array[move_from[1]][move_from[2]] = nil
 			print(piece_array[move_to[1]][move_to[2]], piece_array[move_from[1]][move_from[2]])

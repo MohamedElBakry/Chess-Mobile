@@ -26,6 +26,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.pos = pos
 	self.hasMoved = hasMoved
 	self.prevPos = {}
+	-- TODO: add scale - different for pawn
 	-- self.valid_moves = {}
 
 	return self
@@ -60,6 +61,9 @@ function Piece:isValid(move, array)
 		
 	elseif self.piece == "n" then
 		valid, flag = self:__isvalid_knight(move, array, diff, landing_square_or_piece)
+		
+	elseif self.piece == "r" then
+		valid, flag= self:__isvalid_rook(move, array, diff, landing_square_or_piece)
 	end
 	-- Knight
 	-- Etc.
@@ -121,18 +125,115 @@ function Piece:__isvalid_knight(move, array, diff, landing_square_or_piece)
 
 	if diff == 17 or diff == 15 or diff == 10 or diff == 6 then
 		valid = true
-		if landing_square_or_piece ~= nil then
-			if landing_square_or_piece.colour ~= self.colour then
-				flag = "capture"
-			else
-				valid = false
-				flag = nil
-			end
-		end
+		valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	end
 
 	return valid, flag
 end
+
+-- Diff is 8 or 1
+function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
+	local valid = false
+	local flag = nil
+
+	local diff = math.abs(diff)
+	local mod = math.fmod(diff, 8)  -- Calculate to see if a move is a multiple of 8
+	local upper = self.pos[1] * 8
+	local lower = upper - 7
+	local equiv = utils.get_equivalent(move[1], move[2])
+
+	-- Vertical
+	if mod == 0 then
+		valid = true
+		-- If no pieces are between the current pos and the desired move pos, its valid
+		-- self.pos --> desired move pos
+		for x = 1, 8 do
+			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
+				local piece = array[x][move[2]]
+				if piece ~= nil then
+					print("PIECE IN BETWEEN:", piece.name)
+					valid = false
+					break
+				end
+			end
+		end
+		
+		print("Vertical?")
+	elseif equiv <= upper and equiv >= lower then
+		valid = true
+		print("Horizontal")
+	end
+	
+	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
+	
+	return valid, flag
+end
+
+
+-- Piece agnostic capture check
+function Piece:__capture_check(valid, flag, landing_square_or_piece)
+	if landing_square_or_piece ~= nil then
+		if landing_square_or_piece.colour ~= self.colour then
+			flag = "capture"
+		else
+			valid = false
+			flag = nil
+		end
+	end
+	
+	return valid, flag	
+end
+
+
+-- Knight = Piece:new("", "nw", {1, 1}, false)
+-- 
+-- function Knight:new(id, name, pos, hasMoved)
+-- 
+-- 	-- o = o or {}
+-- 	setmetatable({}, Knight)
+-- 
+-- 	-- self.__index = self
+-- 	self.id = id
+-- 	self.name = name
+-- 	self.piece = string.sub(name, 1, 1)
+-- 	self.colour = string.sub(name, 2, 2)
+-- 	self.pos = pos
+-- 	self.hasMoved = hasMoved
+-- 	self.prevPos = {}
+-- 	-- TODO: add scale - different for pawn
+-- 	-- self.valid_moves = {}
+-- 
+-- 	return self
+-- end
+
+-- function Knight:isValid(move, array, diff, landing_square_or_piece)
+-- 	local valid = false
+-- 	local flag = nil
+-- 
+-- 	local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
+-- 	local landing_square_or_piece = array[move[1]][move[2]] 
+-- 
+-- 	-- The 'polarity' i.e. positive or negative doesn't matter here
+-- 	diff = math.abs(diff)
+-- 
+-- 	if diff == 17 or diff == 15 or diff == 10 or diff == 6 then
+-- 		valid = true
+-- 		if landing_square_or_piece ~= nil then
+-- 			if landing_square_or_piece.colour ~= self.colour then
+-- 				flag = "capture"
+-- 			else
+-- 				valid = false
+-- 				flag = nil
+-- 			end
+-- 		end
+-- 	end
+-- 
+-- 	return valid, flag
+-- end
+-- 
+-- knight = Knight:new("", "nw", {8, 3}, false)
+-- pprint("Knight piece:", knight)
+
 
 
 
