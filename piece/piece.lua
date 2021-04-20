@@ -176,6 +176,23 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 end
 
 
+-- Diff mod 9 or 7 == 0 is valid
+function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
+	local valid, flag = false, nil
+	local diff = math.abs(diff)
+	local mod_9 = math.fmod(diff, 9)
+	local mod_7 = math.fmod(diff, 7)
+
+	if mod_9 == 0 or mod_7 == 0 then
+		valid = true
+	end
+
+	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
+	return valid, flag
+
+end
+
+
 -- Piece agnostic capture check
 function Piece:__capture_check(valid, flag, landing_square_or_piece)
 	if landing_square_or_piece ~= nil then
