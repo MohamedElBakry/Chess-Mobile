@@ -6,7 +6,6 @@ require "utils-module.utils"
 -- Knight = Piece:new()
 -- Knight:isValid(move, array) ... 'specific validation'
 
-
 -- [[ Piece Class --]]
 
 -- Meta Class
@@ -183,9 +182,72 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local mod_9 = math.fmod(diff, 9)
 	local mod_7 = math.fmod(diff, 7)
 
-	if mod_9 == 0 or mod_7 == 0 then
+	local x, y = 0, 0
+	local x_max, y_max = 0, 0
+
+	-- TODO: change the if conditions and think about them
+	-- Diagonally, ensure no pieces are present between the current pos and the desired pos
+	if mod_9 == 0 then
 		valid = true
+		if self.pos[1] < move[1] then
+			
+			x, y = self.pos[1] + 1, self.pos[2] + 1
+			x_max, y_max = move[1], move[2]
+			
+		else
+			x, y = move[1] + 1, move[2] + 1
+			x_max, y_max = self.pos[1], self.pos[2]
+			
+		end
+		
+		while x < x_max and y < y_max do
+			local piece = array[x][y]
+			if piece ~= nil then
+				print(piece.name, x, y)
+				valid = false
+			end
+			x = x + 1
+			y = y + 1
+		end
+		
+	elseif mod_7 == 0 then
+		valid = true
+		if self.pos[1] < move[1] then
+
+			x, y = self.pos[1] - 1, self.pos[2] - 1
+			x_max, y_max = move[1], move[2]
+
+		else
+			x, y = move[1] - 1, move[2] - 1
+			x_max, y_max = self.pos[1], self.pos[2]
+
+		end
+
+		while x < x_max and y < y_max do
+			local piece = array[x][y]
+			if piece ~= nil then
+				print(piece.name, x, y)
+				valid = false
+			end
+			x = x + 1
+			y = y + 1
+		end
+	-- 	for x = 1, 8 do
+	-- 		for y = 1, 8 do
+	-- 			if (x > self.pos[1] and x < move[1]) and (y < self.pos[2] and y > move[2]) or
+	-- 			(x < self.pos[1] and x > move[1]) and (y > self.pos[2] and y < move[2]) then
+	-- 				local piece = array[x][y]
+	-- 				if piece ~= nil then
+	-- 					valid = false
+	-- 					break
+	-- 				end
+	-- 			end
+	-- 		end
+	-- 	end
 	end
+
+	print(self.pos[1], self.pos[2], move[1], move[2])
+	
 
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
