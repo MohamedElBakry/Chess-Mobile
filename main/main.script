@@ -83,14 +83,20 @@ function on_message(self, message_id, message)
 			if flag == "capture" then
 				local captured_go_id = piece_array[move_to[1]][move_to[2]].id
 				msg.post(captured_go_id, "disable")
+				
+			elseif flag == "castle" then 
+				-- The king's valid function deals with this, no more needs to be done
+				return
 			end
+			
 			piece:move(move_to)
 
 			-- Centre the piece in case it glitches out and just hovers over the captured square
 			-- Put in function centre()
-			local pos =  vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
+			local pos = vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
 			go.set_position(pos, piece.id)
-			
+
+
 			-- Change to piece.scale
 			go.set_scale(0.45, piece.id)
 			
