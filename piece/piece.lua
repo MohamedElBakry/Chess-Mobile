@@ -214,24 +214,60 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 		valid = true
 		if self.pos[1] < move[1] then
 
-			x, y = self.pos[1] - 1, self.pos[2] - 1
+			x, y = self.pos[1] + 1, self.pos[2] - 1
 			x_max, y_max = move[1], move[2]
 
 		else
-			x, y = move[1] - 1, move[2] - 1
+			x, y = move[1] + 1, move[2] - 1
+			-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
 			x_max, y_max = self.pos[1], self.pos[2]
 
 		end
 
-		while x < x_max and y < y_max do
+		while x < x_max and y < y_max or y > y_max do
 			local piece = array[x][y]
 			if piece ~= nil then
 				print(piece.name, x, y)
 				valid = false
 			end
 			x = x + 1
-			y = y + 1
+			y = y - 1
 		end
+
+		-- while x < x_max and y > y_max do
+		-- 	local piece = array[x][y]
+		-- 	if piece ~= nil then
+		-- 		print(piece.name, x, y)
+		-- 		valid = false
+		-- 	end
+		-- 	x = x + 1
+		-- 	y = y - 1
+		-- end
+		
+-- 		valid = true
+-- 		
+-- 		if self.pos[1] < move[1] then
+-- 
+-- 			x, y = self.pos[1] - 1, self.pos[2] - 1
+-- 			x_max, y_max = move[1], move[2]
+-- 
+-- 		else
+-- 			x, y = move[1] + 1, move[2] - 1
+-- 			x_max, y_max = self.pos[1], self.pos[2]
+-- 
+-- 		end
+-- 		-- x, y = math.min(self.pos[1], move[1]), math.min(self.pos[2], move[2])
+-- 		-- x_max, y_max = math.max(self.pos[1], move[1]), math.max(self.pos[2], move[2])
+-- 
+-- 		while x < x_max and y < y_max or y > y_max  do
+-- 			local piece = array[x][y]
+-- 			if piece ~= nil then
+-- 				print(piece.name, x, y)
+-- 				valid = false
+-- 			end
+-- 			x = x + 1
+-- 			y = y - 1
+-- 		end
 	-- 	for x = 1, 8 do
 	-- 		for y = 1, 8 do
 	-- 			if (x > self.pos[1] and x < move[1]) and (y < self.pos[2] and y > move[2]) or
