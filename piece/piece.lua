@@ -56,7 +56,8 @@ function Piece:isValid(move, array)
 		["p"] = function(m, a, d, l) return self:__isvalid_pawn(m, a, d, l) end,
 		["n"] = function(m, a, d, l) return self:__isvalid_knight(m, a, d, l) end,
 		["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
-		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end
+		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end,
+		["q"] = function(m, a, d, l) return self:__isvalid_queen(m, a, d, l) end
 	}
 
 	-- 
@@ -169,7 +170,6 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 		
 	end
 
-	-- 
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
 end
@@ -185,109 +185,81 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local x, y = 0, 0
 	local x_max, y_max = 0, 0
 
-	-- TODO: change the if conditions and think about them
-	-- Diagonally, ensure no pieces are present between the current pos and the desired pos
-	if mod_9 == 0 then
-		valid = true
-		if self.pos[1] < move[1] then
-			
-			x, y = self.pos[1] + 1, self.pos[2] + 1
-			x_max, y_max = move[1], move[2]
-			
-		else
-			x, y = move[1] + 1, move[2] + 1
-			x_max, y_max = self.pos[1], self.pos[2]
-			
-		end
+	-- If X isn't the same, then this might be a valid move. 
+	-- Because, otherwise that means the bishop is moving horizontally which is illegal
+	-- This is necessary because the diff from (X, 8) to (X, 1) is 7, which triggers mod_7 == 0
+	if self.pos[1] ~= move[1] then
 		
-		while x < x_max and y < y_max do
-			local piece = array[x][y]
-			if piece ~= nil then
-				print(piece.name, x, y)
-				valid = false
+		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
+		if mod_9 == 0 then
+			valid = true
+			if self.pos[1] < move[1] then
+				
+				x, y = self.pos[1] + 1, self.pos[2] + 1
+				x_max, y_max = move[1], move[2]
+				
+			else
+				x, y = move[1] + 1, move[2] + 1
+				x_max, y_max = self.pos[1], self.pos[2]
+				
 			end
-			x = x + 1
-			y = y + 1
-		end
-		
-	elseif mod_7 == 0 then
-		valid = true
-		if self.pos[1] < move[1] then
-
-			x, y = self.pos[1] + 1, self.pos[2] - 1
-			x_max, y_max = move[1], move[2]
-
-		else
-			x, y = move[1] + 1, move[2] - 1
-			-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
-			x_max, y_max = self.pos[1], self.pos[2]
-
-		end
-
-		while x < x_max and y < y_max or y > y_max do
-			local piece = array[x][y]
-			if piece ~= nil then
-				print(piece.name, x, y)
-				valid = false
+			
+			while x < x_max and y < y_max do
+				local piece = array[x][y]
+				if piece ~= nil then
+					print(piece.name, x, y)
+					valid = false
+					goto capture_check
+				end
+				x = x + 1
+				y = y + 1
 			end
-			x = x + 1
-			y = y - 1
-		end
+			
+		elseif mod_7 == 0 then
+			valid = true
+			if self.pos[1] < move[1] then
 
-		-- while x < x_max and y > y_max do
-		-- 	local piece = array[x][y]
-		-- 	if piece ~= nil then
-		-- 		print(piece.name, x, y)
-		-- 		valid = false
-		-- 	end
-		-- 	x = x + 1
-		-- 	y = y - 1
-		-- end
-		
--- 		valid = true
--- 		
--- 		if self.pos[1] < move[1] then
--- 
--- 			x, y = self.pos[1] - 1, self.pos[2] - 1
--- 			x_max, y_max = move[1], move[2]
--- 
--- 		else
--- 			x, y = move[1] + 1, move[2] - 1
--- 			x_max, y_max = self.pos[1], self.pos[2]
--- 
--- 		end
--- 		-- x, y = math.min(self.pos[1], move[1]), math.min(self.pos[2], move[2])
--- 		-- x_max, y_max = math.max(self.pos[1], move[1]), math.max(self.pos[2], move[2])
--- 
--- 		while x < x_max and y < y_max or y > y_max  do
--- 			local piece = array[x][y]
--- 			if piece ~= nil then
--- 				print(piece.name, x, y)
--- 				valid = false
--- 			end
--- 			x = x + 1
--- 			y = y - 1
--- 		end
-	-- 	for x = 1, 8 do
-	-- 		for y = 1, 8 do
-	-- 			if (x > self.pos[1] and x < move[1]) and (y < self.pos[2] and y > move[2]) or
-	-- 			(x < self.pos[1] and x > move[1]) and (y > self.pos[2] and y < move[2]) then
-	-- 				local piece = array[x][y]
-	-- 				if piece ~= nil then
-	-- 					valid = false
-	-- 					break
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
+				x, y = self.pos[1] + 1, self.pos[2] - 1
+				x_max, y_max = move[1], move[2]
+
+			else
+				x, y = move[1] + 1, move[2] - 1
+				-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
+				x_max, y_max = self.pos[1], self.pos[2]
+
+			end
+
+			while x < x_max and y < y_max or y > y_max do
+				local piece = array[x][y]
+				if piece ~= nil then
+					print(piece.name, x, y)
+					valid = false
+					goto capture_check
+				end
+				x = x + 1
+				y = y - 1
+			end
+		end
 	end
-
-	print(self.pos[1], self.pos[2], move[1], move[2])
 	
-
+	-- print(self.pos[1], self.pos[2], move[1], move[2])
+	
+	::capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
 
+end
+
+function Piece:__isvalid_queen(move, array, diff, landing_square_or_piece)
+	-- The queen moves like a bishop or rook. So if either check is true, then the move is valid 
+	local valid = self:__isvalid_rook(move, array, diff, landing_square_or_piece) 
+	or self:__isvalid_bishop(move, array, diff, landing_square_or_piece)
+	
+	local flag = nil
+	
+	
+	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
+	return valid, flag
 end
 
 
@@ -304,73 +276,3 @@ function Piece:__capture_check(valid, flag, landing_square_or_piece)
 	
 	return valid, flag	
 end
-
-
--- Knight = Piece:new("", "nw", {1, 1}, false)
--- 
--- function Knight:new(id, name, pos, hasMoved)
--- 
--- 	-- o = o or {}
--- 	setmetatable({}, Knight)
--- 
--- 	-- self.__index = self
--- 	self.id = id
--- 	self.name = name
--- 	self.piece = string.sub(name, 1, 1)
--- 	self.colour = string.sub(name, 2, 2)
--- 	self.pos = pos
--- 	self.hasMoved = hasMoved
--- 	self.prevPos = {}
--- 	-- TODO: add scale - different for pawn
--- 	-- self.valid_moves = {}
--- 
--- 	return self
--- end
-
--- function Knight:isValid(move, array, diff, landing_square_or_piece)
--- 	local valid = false
--- 	local flag = nil
--- 
--- 	local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
--- 	local landing_square_or_piece = array[move[1]][move[2]] 
--- 
--- 	-- The 'polarity' i.e. positive or negative doesn't matter here
--- 	diff = math.abs(diff)
--- 
--- 	if diff == 17 or diff == 15 or diff == 10 or diff == 6 then
--- 		valid = true
--- 		if landing_square_or_piece ~= nil then
--- 			if landing_square_or_piece.colour ~= self.colour then
--- 				flag = "capture"
--- 			else
--- 				valid = false
--- 				flag = nil
--- 			end
--- 		end
--- 	end
--- 
--- 	return valid, flag
--- end
--- 
--- knight = Knight:new("", "nw", {8, 3}, false)
--- pprint("Knight piece:", knight)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
