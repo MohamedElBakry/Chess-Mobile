@@ -24,6 +24,12 @@ end
 local piece_array = {}
 piece_class = {p=Piece, n=Knight, r=Piece, b=Piece, k=Piece, q=Piece}
 
+-- Keeps track of the last moved piece for (w)hite and (b)lack, so we can determine if en passant is truly valid
+local team_colour = {
+	["w"] = {last_moved_piece_id = nil}, 
+	["b"] = {last_moved_piece_id = nil}
+}
+
 function init(self)
 	msg.post(".", "acquire_input_focus")
 	-- msg.post("#board", "play_animation", {id = hash("chess-king-white")} ) -- Set a sprite's animation
@@ -77,6 +83,16 @@ function on_message(self, message_id, message)
 		
 		valid, flag = piece:isValid(move_to, piece_array)
 		print("VALIDITY:", valid, "FLAG:", flag)
+
+		if flag == "en_passant" then
+			local adjacent_pawn = piece_array[move_to[1] - 1][move_to[2]] or piece_array[move_to[1] + 1][move_to[2]]
+			if adjacent_pawn.id ~= team_colour[adjacent_pawn.colour]["last_moved_piece_id"] then
+				valid = false
+			else
+				msg.post(adjacent_pawn.id, "disable")
+				piece_array[adjacent_pawn.pos[1]][adjacent_pawn.pos[2]] = nil
+			end
+		end
 		
 		-- If valid Piece:move(pos) and update piece_array
 		if valid then
@@ -104,6 +120,9 @@ function on_message(self, message_id, message)
 			piece_array[move_to[1]][move_to[2]] = piece
 			piece_array[move_from[1]][move_from[2]] = nil
 			print(piece_array[move_to[1]][move_to[2]], piece_array[move_from[1]][move_from[2]])
+
+			-- Track the last moved piece for en passant
+			team_colour[piece.colour]["last_moved_piece_id"] = piece.id
 			
 		else
 			-- If the move is invalid, just take the piece back to the move_from location

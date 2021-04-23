@@ -24,7 +24,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.colour = string.sub(name, 2, 2)
 	self.pos = pos
 	self.hasMoved = hasMoved
-	self.prevPos = {}
+	self.prevPos = self.pos
 	
 	-- TODO: add scale - different for pawn
 	-- self.valid_moves = {}
@@ -95,6 +95,25 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 			valid = true
 			flag = "capture"
 		end
+		
+	-- En passant
+	-- Diagonal capture behind a pawn directly to the left or right, that just moved 2 squares forward
+	-- If there's an opposing pawn directly to this pawn's right or left, that just moved 2 steps forward,
+	-- and this is the opposing team/colour's most recent move then en passant is valid
+	else 
+		if diff == moves.capture_right or diff == moves.capture_left then
+			-- Get the piece that is directly adjacent to this pawn
+			local piece = array[move[1] - 1][move[2]] or array[move[1] + 1][move[2]]
+			
+			if piece ~= nil and piece.colour ~= self.colour and piece.piece == "p" then
+				-- Check if it just moved 2 squares forward
+				local piece_diff = math.abs(utils.get_equivalent(piece.prevPos[1], piece.prevPos[2]) - utils.get_equivalent(piece.pos[1], piece.pos[2]))
+				if piece_diff == math.abs(moves.forward_one * 2) then
+					valid = true
+					flag = "en_passant"
+				end
+			end
+		end
 	end
 
 	-- Regular move check
@@ -105,11 +124,11 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	elseif self.hasMoved == false and diff == moves.forward_one * 2 then
 		valid = true
 	end
-	-- En passant
-	-- Diagonal capture behind a pawn directly to the left or right, that just moved 2 squares forward
+	
 	
 	return valid, flag
 end
+
 
 -- Knight Move Valid Checking
 -- Knight: -17, -15, -10, -6, 6, 10, 15, 17
