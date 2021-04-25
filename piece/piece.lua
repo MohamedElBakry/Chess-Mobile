@@ -47,9 +47,11 @@ function Piece:set_pos(pos)
 	self.pos = pos
 end
 
-function Piece:isValid(move, array)
+function Piece:isValid(move, array, caller)
 	local valid = false
 	local flag = nil
+
+	local caller = caller or "external"
 	
 	-- Creating these functions may be costly
 	local valid_hash = {
@@ -58,7 +60,7 @@ function Piece:isValid(move, array)
 		["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
 		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end,
 		["q"] = function(m, a, d, l) return self:__isvalid_queen(m, a, d, l) end,
-		["k"] = function(m, a, d, l) return self:__isvalid_king(m, a, d, l) end
+		["k"] = function(m, a, d, l, iec) return self:__isvalid_king(m, a, d, l, iec) end
 	}
 
 	-- 
@@ -66,8 +68,12 @@ function Piece:isValid(move, array)
 	local landing_square_or_piece = array[move[1]][move[2]]
 
 	-- Dynamically get the appropriate move validation function, and return the results
+	if self.piece == "k" then
+		return valid_hash[self.piece](move, array, diff, landing_square_or_piece, caller)
+	end
 	return valid_hash[self.piece](move, array, diff, landing_square_or_piece)
 end
+
 
 function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	local valid = false
@@ -271,6 +277,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 
 end
 
+
 function Piece:__isvalid_queen(move, array, diff, landing_square_or_piece)
 	local flag = nil
 	-- The queen moves like a bishop or rook. So if either check is true, then the move is valid 
@@ -281,10 +288,11 @@ function Piece:__isvalid_queen(move, array, diff, landing_square_or_piece)
 	return valid, flag
 end
 
--- 1, 7, 9, 8
-function Piece:__isvalid_king(move, array, diff, landing_square_or_piece)
+
+function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called)
 	local valid, flag = false, nil
 	local diff = math.abs(diff)
+	local caller = called
 	
 	if diff == 1 or diff == 7 or diff == 8 or diff == 9 then
 		valid = true
@@ -346,9 +354,31 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece)
 			
 		end
 	end
+
 	
-	
-	
+	-- Invalid moves: puts the king in check
+	local piece_valid
+	if caller == "external" then
+		-- Put the king in that position to allow enemy pieces to calculate piece:isValid
+		local temp_piece = array[move[1]][move[2]]
+		array[move[1]][move[2]] = self.piece
+		for x = 1, 8 do
+			for y = 1, 8 do
+				local piece = array[x][y]
+				if piece ~= nil and piece ~= self.piece and piece.colour ~= self.colour then
+					local piece_valid, piece_flag = piece:isValid(move, array, "internal")	
+					if piece_valid and piece_flag == "capture" then
+						-- Remove the king from that 'imaginary' position
+						array[move[1]][move[2]] = temp_piece
+						return false, nil
+					end
+				end
+			end
+		end
+		
+		-- Remove the king from that 'imaginary' position in case we haven't returned from the function
+		array[move[1]][move[2]] = temp_piece
+	end
 	
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
