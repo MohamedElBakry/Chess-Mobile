@@ -209,11 +209,49 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local mod_9 = math.fmod(diff, 9)
 	local mod_7 = math.fmod(diff, 7)
 
-	-- Top Right: X-, Y+
-	-- Top Left: X-, Y-
-	-- Bottom Right: X+, Y+
-	-- Bottom Left, X+, Y-
+	-- Create a table of potentia valid moves based on our current position
+	local potential_valid_moves = {}
+	local x, y = self.pos[1], self.pos[2]
+	while x < 8 and y < 8 do
+		x = x + 1
+		y = y + 1
+		table.insert(potential_valid_moves, {x, y})
+	end
+	
+	x, y = self.pos[1], self.pos[2]
+	while x > 1 and y > 1 do
+		x = x - 1
+		y = y - 1
+		table.insert(potential_valid_moves, {x, y})
+	end	
 
+	x, y = self.pos[1], self.pos[2]
+	while x > 1 and y < 8 do
+		x = x - 1
+		y = y + 1
+		table.insert(potential_valid_moves, {x, y})
+	end
+
+	x, y = self.pos[1], self.pos[2]
+	while x < 8 and y > 1 do
+		x = x + 1
+		y = y - 1
+		table.insert(potential_valid_moves, {x, y})
+	end
+
+	-- Look for the desired move in the potential_valid_moves, if we don't find it it's not valid
+	for i, potential_move in ipairs(potential_valid_moves) do
+		if potential_move[1] == move[1] and potential_move[2] == move[2] then
+			valid = true
+		end
+	end
+	
+	if valid == false then
+		return valid, flag
+	end
+
+	
+	-- Look for any pieces that are in our path
 	local x, y = 0, 0
 	local x_max, y_max = 0, 0
 
@@ -223,8 +261,8 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	if self.pos[1] ~= move[1] then
 		
 		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
-		if mod_9 == 0 and (move[1] ~= 2 and move[2] ~= 6) then
-			valid = true
+		if mod_9 == 0 then
+			-- valid = true
 			if self.pos[1] < move[1] then
 				
 				x, y = self.pos[1] + 1, self.pos[2] + 1
@@ -247,8 +285,8 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 				y = y + 1
 			end
 			
-		elseif mod_7 == 0 and (move[1] ~= 2 and move[2] ~= 5) then
-			valid = true
+		elseif mod_7 == 0 then
+			-- valid = true
 			if self.pos[1] < move[1] then
 
 				x, y = self.pos[1] + 1, self.pos[2] - 1
