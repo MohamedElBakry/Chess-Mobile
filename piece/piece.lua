@@ -209,6 +209,11 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local mod_9 = math.fmod(diff, 9)
 	local mod_7 = math.fmod(diff, 7)
 
+	-- Top Right: X-, Y+
+	-- Top Left: X-, Y-
+	-- Bottom Right: X+, Y+
+	-- Bottom Left, X+, Y-
+
 	local x, y = 0, 0
 	local x_max, y_max = 0, 0
 
@@ -218,7 +223,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	if self.pos[1] ~= move[1] then
 		
 		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
-		if mod_9 == 0 then
+		if mod_9 == 0 and (move[1] ~= 2 and move[2] ~= 6) then
 			valid = true
 			if self.pos[1] < move[1] then
 				
@@ -242,7 +247,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 				y = y + 1
 			end
 			
-		elseif mod_7 == 0 then
+		elseif mod_7 == 0 and (move[1] ~= 2 and move[2] ~= 5) then
 			valid = true
 			if self.pos[1] < move[1] then
 
