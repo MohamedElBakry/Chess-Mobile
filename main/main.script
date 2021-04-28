@@ -7,12 +7,13 @@ local piece_class = {p=Piece, n=Piece, r=Piece, b=Piece, k=Piece, q=Piece}
 
 -- Make all moves invalid while the King is in check
 	-- Track king?
+	-- Function: iterate over opposing pieces to see if they can 'capture' the king -- put him in check
 -- Turns - White --> Black --> White --> Black ...
 -- Piece pinning - so X-Raying pieces can pin a piece if that piece's King is being protected by them
 -- Game ending - if a king has no valid moves (which don't put him in check) it's over
-local kings = {}
 
 -- Keeps track of the last moved piece for (w)hite and (b)lack, so we can determine if en passant is truly valid
+-- See Piece:__isvalid_pawn
 local team_colour = {
 	["w"] = {last_moved_piece_id = nil}, 
 	["b"] = {last_moved_piece_id = nil}
@@ -30,12 +31,14 @@ function on_message(self, message_id, message)
 		-- Loop through the piece array and replace 'constructor' tables with Piece function-objects
 		for x, row in ipairs(piece_array) do
 			for y, piece_table in ipairs(row) do
-				local p = string.sub(piece_table["name"], 1, 1)
-				local Class = piece_class[p] 
-				local piece = Piece:new(piece_table["id"], piece_table["name"], {x, y}, false)
-
+				local piece = deepcopy(Piece:new(piece_table["id"], piece_table["name"], {x, y}, false))
+				if piece.piece == "p" then
+					piece.scale = piece.scale - 0.04  -- default scale is 0.45
+				end
+				
 				-- Replace the piece_table with the Piece function-object
-				piece_array[x][y] = deepcopy(piece)
+				piece_array[x][y] = piece
+				
 			end
 		end
 	end
@@ -67,10 +70,17 @@ function on_message(self, message_id, message)
 		local piece = deepcopy(piece_array[move_from[1]][move_from[2]])
 		print("piece:", piece)
 		
-		valid, flag = piece:isValid(move_to, piece_array)
+		local valid, flag = piece:isValid(move_to, piece_array)
 		print("VALIDITY:", valid, "FLAG:", flag)
 
-		if flag == "en_passant" then
+		-- The king being in check overrides any move validation unless it's the king moving out of check
+		-- as the king validation function would prevent that from happening
+		if piece.piece ~= "k" then
+			valid = is_king_not_checkable(valid, piece.colour, piece_array)
+		end
+
+		-- Check for specific movement flags
+		if valid and flag == "en_passant" then
 			local adjacent_pawn = piece_array[move_to[1] - 1][move_to[2]] or piece_array[move_to[1] + 1][move_to[2]]
 			if adjacent_pawn.id ~= team_colour[adjacent_pawn.colour]["last_moved_piece_id"] then
 				valid = false
@@ -100,7 +110,7 @@ function on_message(self, message_id, message)
 
 
 			-- Change to piece.scale
-			go.set_scale(0.45, piece.id)
+			go.set_scale(piece.scale, piece.id)
 			
 			-- Reflect positional changes in the piece_array
 			piece_array[move_to[1]][move_to[2]] = piece
@@ -121,7 +131,7 @@ function on_message(self, message_id, message)
 			go.set_position(pos, piece.id)
 
 			-- Change to piece.scale
-			go.set_scale(0.45, piece.id)
+			go.set_scale(piece.scale, piece.id)
 		end
 	end
 	
@@ -162,5 +172,65 @@ function deepcopy(orig)
 		copy = orig
 	end
 	return copy
+end
+
+
+-- Return bool
+-- Iterate over the array to find the king of that colour, and see if he is in check
+function is_king_in_check(colour, array) 
+	for i, row in ipairs(array) do
+		for i, piece in ipairs(row) do
+			if piece ~= nil and piece.name == "k" .. colour then
+				return piece.isChecked
+			end
+		end
+	end
+end
+
+-- Return bool
+-- Find the king and put him in check if a piece of the opposing colour can capture him
+function is_king_not_checkable(valid, colour, array)
+	local king_pos
+	
+	-- Get the king's position
+	for _, row in ipairs(array) do
+		for __, piece in ipairs(row) do
+			if piece ~= nil and piece.name == "k" .. colour then
+				king_pos = piece.pos
+				goto is_capturable
+			end
+		end
+	end
+	
+	if king_pos == nil then
+		print("ERRORRRRRRRRRRRR")
+		for _, row in ipairs(array) do
+			for __, piece in ipairs(row) do
+				if piece ~= nil and piece.name == "k" .. colour then
+					king_pos = piece.pos
+					goto is_capturable
+				end
+			end
+		end
+	end
+	
+	::is_capturable::
+	
+	local piece_valid
+	for x = 1, 8 do
+		for y = 1, 8 do
+			local piece = array[x][y]
+			if piece ~= nil and piece.name ~= "k" .. colour and piece.colour ~= colour then
+				local piece_valid, piece_flag = piece:isValid(king_pos, array)	
+				if piece_valid and piece_flag == "capture" then
+					array[king_pos[1]][king_pos[2]].isChecked = true 
+					return false
+				end
+			end
+		end
+	end
+
+	return valid
+	
 end
 

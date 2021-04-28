@@ -26,6 +26,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.isChecked = false
 	
 	-- TODO: add scale - different for pawn
+	self.scale = 0.45
 	-- self.valid_moves = {}
 
 	return self
@@ -185,7 +186,7 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
 				local piece = array[x][move[2]]
 				if piece ~= nil then
-					print("PIECE IN BETWEEN:", piece.name)
+					print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
 					break
 				end
@@ -199,7 +200,7 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
 				local piece = array[move[1]][y]
 				if piece ~= nil then
-					print("PIECE IN BETWEEN:", piece.name)
+					print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
 					break
 				end
