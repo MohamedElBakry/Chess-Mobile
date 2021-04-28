@@ -2,27 +2,15 @@ require "utils-module.utils"
 require "piece.piece"
 local rendercam = require "rendercam.rendercam"
 
-
--- Source: lua-users wiki
--- Function that clones a table and so we avoid the pass by reference error
-function deepcopy(orig)
-	local orig_type = type(orig)
-	local copy
-	if orig_type == 'table' then
-		copy = {}
-		for orig_key, orig_value in next, orig, nil do
-			copy[deepcopy(orig_key)] = deepcopy(orig_value)
-		end
-		setmetatable(copy, deepcopy(getmetatable(orig)))
-	else -- number, string, boolean, etc
-		copy = orig
-	end
-	return copy
-end
-
-
 local piece_array = {}
-piece_class = {p=Piece, n=Knight, r=Piece, b=Piece, k=Piece, q=Piece}
+local piece_class = {p=Piece, n=Piece, r=Piece, b=Piece, k=Piece, q=Piece}
+
+-- Make all moves invalid while the King is in check
+	-- Track king?
+-- Turns - White --> Black --> White --> Black ...
+-- Piece pinning - so X-Raying pieces can pin a piece if that piece's King is being protected by them
+-- Game ending - if a king has no valid moves (which don't put him in check) it's over
+local kings = {}
 
 -- Keeps track of the last moved piece for (w)hite and (b)lack, so we can determine if en passant is truly valid
 local team_colour = {
@@ -32,14 +20,12 @@ local team_colour = {
 
 function init(self)
 	msg.post(".", "acquire_input_focus")
-	-- msg.post("#board", "play_animation", {id = hash("chess-king-white")} ) -- Set a sprite's animation
 end
 
 function on_message(self, message_id, message)
 	print("MESSAGE:", message_id, message.id)
 	if message_id == hash("piece_array") then
 		piece_array = message.id
-		-- pprint("INITIAL ARRAY:", piece_array)
 
 		-- Loop through the piece array and replace 'constructor' tables with Piece function-objects
 		for x, row in ipairs(piece_array) do
@@ -142,7 +128,6 @@ function on_message(self, message_id, message)
 end
 
 
--- NEED TO BAKE PIECE NAME INTO GO NAME TO DIFFERNTIATE MORE EASILY
 function on_input(self, action_id, action)
 	if action_id == hash("touch") and action.pressed then
 		print("Touch!")
@@ -159,3 +144,23 @@ function on_input(self, action_id, action)
 		-- If an actual piece is clicked/tapped
 	end
 end
+
+-- [[ Helper Functions ]]
+
+-- Source: lua-users wiki
+-- Function that clones a table and so we avoid the pass by reference error
+function deepcopy(orig)
+	local orig_type = type(orig)
+	local copy
+	if orig_type == 'table' then
+		copy = {}
+		for orig_key, orig_value in next, orig, nil do
+			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+		end
+		setmetatable(copy, deepcopy(getmetatable(orig)))
+	else -- number, string, boolean, etc
+		copy = orig
+	end
+	return copy
+end
+

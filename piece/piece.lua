@@ -1,10 +1,6 @@
 require "utils-module.utils"
 
 -- This seems inefficient, so consider making more specific sub classes from Piece, e.g. Pawn, Knight, Queen ...
--- Pawn = Piece:new()
--- Pawn:isValid(move, array) ... 'specific validation'
--- Knight = Piece:new()
--- Knight:isValid(move, array) ... 'specific validation'
 
 -- [[ Piece Class --]]
 
@@ -26,16 +22,26 @@ function Piece:new(id, name, pos, hasMoved)
 	self.hasMoved = hasMoved
 	self.prevPos = self.pos
 	
+	-- King specfic attribute
+	self.isChecked = false
+	
 	-- TODO: add scale - different for pawn
 	-- self.valid_moves = {}
 
 	return self
 end
 
+
+--[[ Piece Methods ]]
 function Piece:move(pos)
 	self.prevPos = self.pos
 	self.pos = pos
 	self.hasMoved = true
+
+	-- If a king moves, then he must've made a valid move that puts him out of check
+	if self.piece == "k" then
+		self.isChecked = false
+	end
 end
 
 -- Get a 'representation' of the position
@@ -50,7 +56,8 @@ end
 function Piece:isValid(move, array, caller)
 	local valid = false
 	local flag = nil
-
+	
+	-- A variable to passed to isvalid_king to stop an infinite recursive self callback
 	local caller = caller or "external"
 	
 	-- Creating these functions may be costly
@@ -60,7 +67,7 @@ function Piece:isValid(move, array, caller)
 		["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
 		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end,
 		["q"] = function(m, a, d, l) return self:__isvalid_queen(m, a, d, l) end,
-		["k"] = function(m, a, d, l, iec) return self:__isvalid_king(m, a, d, l, iec) end
+		["k"] = function(m, a, d, l, c) return self:__isvalid_king(m, a, d, l, c) end
 	}
 
 	-- 
@@ -127,8 +134,12 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 		valid = true
 		-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
 		-- First move can be 2 squares forward or 1 square
-	elseif self.hasMoved == false and diff == moves.forward_one * 2 then
-		valid = true
+	elseif self.hasMoved == false and diff == moves.forward_one * 2 and landing_square_or_piece == nil then
+		if self.colour == "b" then
+			valid = array[move[1] - 1][move[2]] == nil
+		else
+			valid = array[move[1] + 1][move[2]] == nil
+		end
 	end
 	
 	
