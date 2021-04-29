@@ -415,8 +415,10 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	local piece_valid
 	if caller == "external" then
 		-- Put the king in that position to allow enemy pieces to calculate piece:isValid
-		local temp_piece = array[move[1]][move[2]]
-		array[move[1]][move[2]] = self.piece
+		-- and remove him for the previous position temporarily
+		local temp_piece = _deepcopy(array[move[1]][move[2]])
+		array[move[1]][move[2]] = _deepcopy(self)
+		array[self.pos[1]][self.pos[2]] = nil
 		for x = 1, 8 do
 			for y = 1, 8 do
 				local piece = array[x][y]
@@ -425,6 +427,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 					if piece_valid and piece_flag == "capture" then
 						-- Remove the king from that 'imaginary' position
 						array[move[1]][move[2]] = temp_piece
+						array[self.pos[1]][self.pos[2]] = self
 						return false, nil
 					end
 				end
@@ -433,6 +436,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 		
 		-- Remove the king from that 'imaginary' position in case we haven't returned from the function
 		array[move[1]][move[2]] = temp_piece
+		array[self.pos[1]][self.pos[2]] = self
 	end
 	
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
@@ -452,4 +456,20 @@ function Piece:__capture_check(valid, flag, landing_square_or_piece)
 	end
 	
 	return valid, flag	
+end
+
+
+function _deepcopy(orig)
+	local orig_type = type(orig)
+	local copy
+	if orig_type == 'table' then
+		copy = {}
+		for orig_key, orig_value in next, orig, nil do
+			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+		end
+		setmetatable(copy, deepcopy(getmetatable(orig)))
+	else -- number, string, boolean, etc
+		copy = orig
+	end
+	return copy
 end

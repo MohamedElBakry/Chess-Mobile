@@ -75,9 +75,9 @@ function on_message(self, message_id, message)
 
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
-		if piece.piece ~= "k" then
-			valid = is_king_not_checkable(valid, piece.colour, piece_array)
-		end
+		-----========= look here
+		-- valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
+		
 
 		-- Check for specific movement flags
 		if valid and flag == "en_passant" then
@@ -115,7 +115,7 @@ function on_message(self, message_id, message)
 			-- Reflect positional changes in the piece_array
 			piece_array[move_to[1]][move_to[2]] = piece
 			piece_array[move_from[1]][move_from[2]] = nil
-			print(piece_array[move_to[1]][move_to[2]], piece_array[move_from[1]][move_from[2]])
+			-- print(piece_array[move_to[1]][move_to[2]].name, ,"-->", piece_array[move_from[1]][move_from[2]])
 
 			-- Track the last moved piece for en passant
 			team_colour[piece.colour]["last_moved_piece_id"] = piece.id
@@ -133,8 +133,8 @@ function on_message(self, message_id, message)
 			-- Change to piece.scale
 			go.set_scale(piece.scale, piece.id)
 		end
-	end
-	
+	end	
+	show(piece_array)
 end
 
 
@@ -189,12 +189,11 @@ end
 
 -- Return bool
 -- Find the king and put him in check if a piece of the opposing colour can capture him
-function is_king_not_checkable(valid, colour, array)
-	local king_pos
-	
-	-- Get the king's position
-	for _, row in ipairs(array) do
-		for __, piece in ipairs(row) do
+function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
+	local king_pos = {}
+	for x = 1, 8 do
+		for y = 1, 8 do
+			piece = array[x][y]
 			if piece ~= nil and piece.name == "k" .. colour then
 				king_pos = piece.pos
 				goto is_capturable
@@ -202,28 +201,25 @@ function is_king_not_checkable(valid, colour, array)
 		end
 	end
 	
-	if king_pos == nil then
-		print("ERRORRRRRRRRRRRR")
-		for _, row in ipairs(array) do
-			for __, piece in ipairs(row) do
-				if piece ~= nil and piece.name == "k" .. colour then
-					king_pos = piece.pos
-					goto is_capturable
-				end
-			end
-		end
-	end
-	
+	-- TODO: do the move and undo it if neccessary???
+	-- Make the move then check if the king can still be captured
+	-- Then undo it regardless
 	::is_capturable::
+	
+	local temp_captured = array[move[1]][move[2]]
+	array[move[1]][move[2]] = moving_piece
+	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
 	
 	local piece_valid
 	for x = 1, 8 do
 		for y = 1, 8 do
 			local piece = array[x][y]
-			if piece ~= nil and piece.name ~= "k" .. colour and piece.colour ~= colour then
+			if piece ~= nil and piece.colour ~= colour and (piece.piece == "q" or piece.piece == "r" or piece.piece == "b") then
 				local piece_valid, piece_flag = piece:isValid(king_pos, array)	
 				if piece_valid and piece_flag == "capture" then
 					array[king_pos[1]][king_pos[2]].isChecked = true 
+					array[move[1]][move[2]] = temp_captured
+					array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
 					return false
 				end
 			end
@@ -232,5 +228,22 @@ function is_king_not_checkable(valid, colour, array)
 
 	return valid
 	
+end
+
+
+function show(piece_array)
+	local row_str = ""
+	for x = 1, 8 do
+		for y = 1, 8 do
+			if piece_array[x][y] ~= nil then
+				row_str = row_str .. piece_array[x][y].name .. ", "
+			else
+				row_str = row_str .. "  " .. ", "
+			end
+		end
+		print(row_str)
+		row_str = ""
+	end
+	return
 end
 
