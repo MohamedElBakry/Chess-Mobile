@@ -76,7 +76,7 @@ function on_message(self, message_id, message)
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
 		-----========= look here
-		-- valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
+		valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
 		
 
 		-- Check for specific movement flags
@@ -206,15 +206,20 @@ function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
 	-- Then undo it regardless
 	::is_capturable::
 	
-	local temp_captured = array[move[1]][move[2]]
-	array[move[1]][move[2]] = moving_piece
-	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
+	if valid == false then
+		return false
+	end
 	
+	local temp_captured = deepcopy(array[move[1]][move[2]])
+	array[move[1]][move[2]] = moving_piece
+	
+	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
+
 	local piece_valid
 	for x = 1, 8 do
 		for y = 1, 8 do
 			local piece = array[x][y]
-			if piece ~= nil and piece.colour ~= colour and (piece.piece == "q" or piece.piece == "r" or piece.piece == "b") then
+			if piece ~= nil and piece.colour ~= colour then
 				local piece_valid, piece_flag = piece:isValid(king_pos, array)	
 				if piece_valid and piece_flag == "capture" then
 					array[king_pos[1]][king_pos[2]].isChecked = true 
@@ -226,6 +231,8 @@ function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
 		end
 	end
 
+	array[move[1]][move[2]] = temp_captured
+	array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
 	return valid
 	
 end
