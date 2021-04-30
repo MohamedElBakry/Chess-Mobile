@@ -36,4 +36,39 @@ function utils.get_px_from(board_coord)
 	return (board_coord - 0.5) * SQUARE_SIZE
 end
 
--- print(utils.get_px_from(7))	
+-- Source: lua-users wiki
+-- Function that clones a table and so we avoid the pass by reference error
+function deepcopy(orig)
+	local orig_type = type(orig)
+	local copy
+	if orig_type == 'table' then
+		copy = {}
+		for orig_key, orig_value in next, orig, nil do
+			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+		end
+		setmetatable(copy, deepcopy(getmetatable(orig)))
+	else -- number, string, boolean, etc
+		copy = orig
+	end
+	return copy
+end
+
+utils.deepcopy = deepcopy
+
+function utils.enum(table)
+	if type(table) ~= "table" then
+		return nil
+	end
+
+	local enum = {} 
+	for i, v in ipairs(table) do
+		-- If this is a new key, add it to the enum
+		if enum[v] == nil then
+			enum[v] = i
+		end
+	end
+
+	return enum
+end
+
+return utils
