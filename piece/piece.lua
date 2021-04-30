@@ -1,4 +1,4 @@
-require "utils-module.utils"
+local utils = require "utils-module.utils"
 
 -- This seems inefficient, so consider making more specific sub classes from Piece, e.g. Pawn, Knight, Queen ...
 
@@ -21,13 +21,10 @@ function Piece:new(id, name, pos, hasMoved)
 	self.pos = pos
 	self.hasMoved = hasMoved
 	self.prevPos = self.pos
+	self.scale = 0.45
 	
 	-- King specfic attribute
 	self.isChecked = false
-	
-	-- TODO: add scale - different for pawn
-	self.scale = 0.45
-	-- self.valid_moves = {}
 
 	return self
 end
@@ -83,6 +80,7 @@ function Piece:isValid(move, array, caller)
 end
 
 
+-- TODO: Pawn promotion to all pieces but 
 function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -93,7 +91,7 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 		forward_one=8 
 	}
 
-	-- Negate the black pawn moves 
+	-- Negate (make negative, -n) the black pawn moves 
 	if self.colour == "b" then
 		for k, v in pairs(moves) do
 			moves[k] = -v

@@ -1,5 +1,5 @@
 local utils = require "utils-module.utils"
-require "piece.piece"
+local piece = require "piece.piece"
 local rendercam = require "rendercam.rendercam"
 
 local piece_array = {}
@@ -7,7 +7,8 @@ local piece_array = {}
 -- Turns - White --> Black --> White --> Black ...
 -- Game ending - if a king has no valid moves (which don't put him in check) it's over
 
-local GAME_STATE = utils.enum({"START", "END", "TURN_WHITE", "TURN_BLACK"})
+local GAME_STATE = utils.enum({"START", "END", "TURN_WHITE", "TURN_BLACK", "WIN_WHITE", "WIN_BLACK"})
+local current_state = GAME_STATE.TURN_WHITE
 
 -- Keeps track of the last moved piece for (w)hite and (b)lack, so we can determine if en passant is truly valid
 -- See Piece:__isvalid_pawn
@@ -43,7 +44,7 @@ function on_message(self, message_id, message)
 
 	-- Move Validation
 	if message_id == hash("is_valid") then
-		move_from = {}
+		local move_from = {}
 		go_id = message.id[1]
 
 		-- Get piece
@@ -74,6 +75,26 @@ function on_message(self, message_id, message)
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
 		valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
+
+		-- Final check that overrides all other checks to see if the correct team is moving a piece
+		if current_state == GAME_STATE.TURN_WHITE then
+			-- If a (W)HITE piece is trying to make a valid move then allow it
+			valid = piece.colour == "w" and valid
+			
+			if valid then
+				current_state = GAME_STATE.TURN_BLACK
+			end
+			
+		elseif current_state == GAME_STATE.TURN_BLACK then
+
+			-- Ai.move() ?
+			-- If a (B)LACK piece is trying to make a valid move then allow it
+			valid = piece.colour == "b" and valid
+			if valid then
+				current_state = GAME_STATE.TURN_WHITE
+			end
+		end
+		
 
 		-- Check for specific movement flags
 		if valid and flag == "en_passant" then
