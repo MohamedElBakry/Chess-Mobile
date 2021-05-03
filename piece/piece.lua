@@ -31,7 +31,7 @@ end
 
 
 --[[ Piece Methods ]]
-function Piece:move(pos)
+function Piece:move(pos, piece_array)
 	self.prevPos = self.pos
 	self.pos = pos
 	self.hasMoved = true
@@ -40,6 +40,11 @@ function Piece:move(pos)
 	if self.piece == "k" then
 		self.isChecked = false
 	end
+
+	-- Reflect positional changes in the piece_array
+	piece_array[self.pos[1]][self.pos[2]] = self
+	piece_array[self.prevPos[1]][self.prevPos[2]] = nil
+	
 end
 
 -- Get a 'representation' of the position
@@ -103,7 +108,7 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	-- Black Pawn taking pattern: -9 or -7 and as above
 	-- Compare current pos with new desired pos for capture patterns
 	if landing_square_or_piece ~= nil then
-		if diff == moves.capture_right or diff == moves.capture_left and landing_square_or_piece.colour ~= self.colour then
+		if diff == moves.capture_right or diff == moves.capture_left  and landing_square_or_piece.colour ~= self.colour then
 			valid = true
 			flag = "capture"
 		end
@@ -359,7 +364,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	-- If the king and the selected rook hasn't moved, and there are no pieces in between, then castle
 	-- Castle: king moves 2 places towards the rook and the rook is closer to the centre
 	-- 4 = Left, 3 = Right
-	if self.hasMoved == false then
+	if self.hasMoved == false and self.isChecked == false then
 		local piece = array[move[1]][move[2]]
 		if piece ~= nil and piece.piece == "r" and piece.hasMoved == false then
 			
@@ -414,8 +419,8 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	if caller == "external" then
 		-- Put the king in that position to allow enemy pieces to calculate piece:isValid
 		-- and remove him for the previous position temporarily
-		local temp_piece = _deepcopy(array[move[1]][move[2]])
-		array[move[1]][move[2]] = _deepcopy(self)
+		local temp_piece = utils.deepcopy(array[move[1]][move[2]])
+		array[move[1]][move[2]] = utils.deepcopy(self)
 		array[self.pos[1]][self.pos[2]] = nil
 		for x = 1, 8 do
 			for y = 1, 8 do
@@ -423,6 +428,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 				if piece ~= nil and piece ~= self.piece and piece.colour ~= self.colour then
 					local piece_valid, piece_flag = piece:isValid(move, array, "internal")	
 					if piece_valid and piece_flag == "capture" then
+						
 						-- Remove the king from that 'imaginary' position
 						array[move[1]][move[2]] = temp_piece
 						array[self.pos[1]][self.pos[2]] = self
@@ -457,17 +463,18 @@ function Piece:__capture_check(valid, flag, landing_square_or_piece)
 end
 
 
-function _deepcopy(orig)
-	local orig_type = type(orig)
-	local copy
-	if orig_type == 'table' then
-		copy = {}
-		for orig_key, orig_value in next, orig, nil do
-			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+function Piece:get_valid_moves(array)
+	local valid_moves = {}
+
+	local valid, flag
+	for x = 1, 8 do
+		for y = 1, 8 do
+			valid, flag = self:isValid({x, y}, array)
+			if valid then
+				table.insert(valid_moves, {x, y})
+			end
 		end
-		setmetatable(copy, deepcopy(getmetatable(orig)))
-	else -- number, string, boolean, etc
-		copy = orig
 	end
-	return copy
+	
+	return valid_moves
 end

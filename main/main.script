@@ -4,10 +4,9 @@ local rendercam = require "rendercam.rendercam"
 
 local piece_array = {}
 
--- Turns - White --> Black --> White --> Black ...
 -- Game ending - if a king has no valid moves (which don't put him in check) it's over
 
-local GAME_STATE = utils.enum({"START", "END", "TURN_WHITE", "TURN_BLACK", "WIN_WHITE", "WIN_BLACK"})
+local GAME_STATE = utils.enum({"START", "END", "TURN_WHITE", "TURN_BLACK", "WIN_WHITE", "WIN_BLACK", "STALEMATE"})
 local current_state = GAME_STATE.TURN_WHITE
 
 -- Keeps track of the last moved piece for (w)hite and (b)lack, so we can determine if en passant is truly valid
@@ -31,6 +30,8 @@ function on_message(self, message_id, message)
 		for x, row in ipairs(piece_array) do
 			for y, piece_table in ipairs(row) do
 				local piece = utils.deepcopy(Piece:new(piece_table["id"], piece_table["name"], {x, y}, false))
+
+				-- Set the pawns to have a slightly smaller scale
 				if piece.piece == "p" then
 					piece.scale = piece.scale - 0.04  -- default scale is 0.45
 				end
@@ -41,33 +42,23 @@ function on_message(self, message_id, message)
 			end
 		end
 	end
-
+	
 	-- Move Validation
 	if message_id == hash("is_valid") then
-		local move_from = {}
-		go_id = message.id[1]
 
 		-- Get piece
-		for x = 1, 8 do
-			for y = 1, 8 do
-				if piece_array[x][y] ~= nil then
-					if piece_array[x][y].id == go_id then
-						move_from = {x, y}
-					end
-				end
-			end
-		end
-		
+		go_id = message.id[1]
+		local move_from = get_piece_location(go_id)
 		local move_to = message.id[2]
 
 		-- Error check
 		if move_from[1] == nil then
+			print("move_from is nil... returning")
 			return
 		end
 		
 		-- Get the piece
 		local piece = utils.deepcopy(piece_array[move_from[1]][move_from[2]])
-		print("piece:", piece)
 		
 		local valid, flag = piece:isValid(move_to, piece_array)
 		print("VALIDITY:", valid, "FLAG:", flag)
@@ -75,32 +66,17 @@ function on_message(self, message_id, message)
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
 		valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
-
-		-- Final check that overrides all other checks to see if the correct team is moving a piece
-		if current_state == GAME_STATE.TURN_WHITE then
-			-- If a (W)HITE piece is trying to make a valid move then allow it
-			valid = piece.colour == "w" and valid
-			
-			if valid then
-				current_state = GAME_STATE.TURN_BLACK
-			end
-			
-		elseif current_state == GAME_STATE.TURN_BLACK then
-
-			-- Ai.move() ?
-			-- If a (B)LACK piece is trying to make a valid move then allow it
-			valid = piece.colour == "b" and valid
-			if valid then
-				current_state = GAME_STATE.TURN_WHITE
-			end
-		end
 		
+		-- Final check that overrides all other checks to see if the correct team is moving a piece
+		current_state, valid = get(current_state, valid, piece.colour)
 
 		-- Check for specific movement flags
 		if valid and flag == "en_passant" then
+			
 			local adjacent_pawn = piece_array[move_to[1] - 1][move_to[2]] or piece_array[move_to[1] + 1][move_to[2]]
 			if adjacent_pawn.id ~= team_colour[adjacent_pawn.colour]["last_moved_piece_id"] then
 				valid = false
+				
 			else
 				msg.post(adjacent_pawn.id, "disable")
 				piece_array[adjacent_pawn.pos[1]][adjacent_pawn.pos[2]] = nil
@@ -117,69 +93,102 @@ function on_message(self, message_id, message)
 				-- The king's valid function deals with this, no more needs to be done
 				return
 			end
-			
-			piece:move(move_to)
+
+			piece:move(move_to, piece_array)
 
 			-- Centre the piece in case it glitches out and just hovers over the captured square
-			-- Put in function centre()
-			local pos = vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
-			go.set_position(pos, piece.id)
-
-
-			-- Change to piece.scale
-			go.set_scale(piece.scale, piece.id)
-			
-			-- Reflect positional changes in the piece_array
-			piece_array[move_to[1]][move_to[2]] = piece
-			piece_array[move_from[1]][move_from[2]] = nil
-			-- print(piece_array[move_to[1]][move_to[2]].name, ,"-->", piece_array[move_from[1]][move_from[2]])
+			centre(piece.pos, piece.id, piece.scale)
 
 			-- Track the last moved piece for en passant
 			team_colour[piece.colour]["last_moved_piece_id"] = piece.id
+
+			-- CHECKMATE?
+			-- If the enemy king is in check, and has no valid moves,
+			-- and there are no moves by his pieces that will put him out of check, then there's a winner
+			local enemy_colour = "w"
+			if piece.colour == "w" then
+				enemy_colour = "b"
+			end
+
+			local enemy_king = get_king(enemy_colour, piece_array)
 			
+			-- Check if the enemy king is now in check
+			local our_piece, our_piece_flag
+			
+			for x = 1, 8 do 
+				for y = 1, 8 do
+					our_piece = piece_array[x][y]
+					
+					if our_piece ~= nil and our_piece.colour == piece.colour then
+					
+						our_piece_valid, our_piece_flag = our_piece:isValid(enemy_king.pos, piece_array)
+						if our_piece_valid and our_piece_flag == "capture" then
+							enemy_king.isChecked = true
+							goto is_checked
+						end
+					end
+					
+					-- ::continue::
+				end
+			end
+
+			::is_checked::
+			if enemy_king.isChecked then
+				if table.getn(enemy_king:get_valid_moves(piece_array)) == 0 then
+					local enemy_piece
+					local game_over = true
+					for x = 1, 8 do
+						for y = 1, 8 do
+
+							enemy_piece = piece_array[x][y]
+							if enemy_piece ~= nil and enemy_piece.colour == enemy_king.colour then
+								local piece_moves = enemy_piece:get_valid_moves(piece_array)
+								local any_valid_moves = false
+								for _, move in ipairs(piece_moves) do
+
+									any_valid_moves = is_king_not_checkable(true, "", move, enemy_piece, enemy_piece.colour, piece_array)
+									if any_valid_moves == true then
+										-- print("GAME OVER", piece.colour, "WINS!")
+										print("NOT GAME OVER YET")
+										print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
+										game_over = false
+									return
+										-- current_state = GAME_STATE
+									end
+
+								end
+							end
+
+						end
+					end
+					
+					if game_over then
+						print("GAME OVER", piece.colour, "WINS!")
+					end
+					
+				end
+			end
+
 		else
 			-- If the move is invalid, just take the piece back to the move_from location
-			local prev_pos = vmath.vector3(utils.get_px_from(move_from[2]), utils.get_px_from(utils.arr_coords[move_from[1]]), 0)
-			go.set_position(prev_pos, piece.id)
+			centre(move_from, piece.id, piece.scale)
 			
-			-- Centre the piece in case it glitches out and just hovers over the captured square
-			-- Put in function centre()
-			local pos =  vmath.vector3(utils.get_px_from(piece.pos[2]), utils.get_px_from(utils.arr_coords[piece.pos[1]]), 0)
-			go.set_position(pos, piece.id)
-
-			-- Change to piece.scale
-			go.set_scale(piece.scale, piece.id)
 		end
-	end	
-	show(piece_array)
-end
-
-
-function on_input(self, action_id, action)
-	if action_id == hash("touch") and action.pressed then
-		-- print("Touch!")
-
-		-- -- print(utils_px_to_xy(action.x, action.y))
-		-- local pos = utils.px_to_xy({action.screen_x, action.screen_y})
-		-- print(pos[1], pos[2], "--> " .. utils.get_equivalent(pos[1], pos[2]))
-		-- print(piece_array[pos[1]][pos[2]])
-		-- print(action.screen_x, action.screen_y)
-
-		-- Move the clicked piece 1 space forward if white, and 1 down if black
-		-- local clicked_go = piece_array[pos[1]][pos[2]]
-		
 	end
-end
 
+	show(piece_array)
+	
+	return
+end
 
 -- [[ Helper Functions ]]
 
 -- Return: bool
--- Make all moves invalid while the King is in check
--- Find the king and put him in check if a piece of the opposing colour can capture him
--- Function: iterate over opposing pieces to see if they can 'capture' the king -- put him in check
--- Piece pinning - so X-Raying pieces can pin a piece if that piece's King is being protected by them
+-- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check
+-- TODO: remove the flag parameter 
 function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
+
+	-- Change this to get_king(colour, array), as we address king.isChecked in this function anyway
 	local king_pos = {}
 	for x = 1, 8 do
 		for y = 1, 8 do
@@ -201,7 +210,6 @@ function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
 	
 	local temp_captured = utils.deepcopy(array[move[1]][move[2]])
 	array[move[1]][move[2]] = moving_piece
-	
 	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
 
 	local piece_valid
@@ -226,7 +234,6 @@ function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
 
 end
 
-
 function show(piece_array)
 	local row_str = ""
 	for x = 1, 8 do
@@ -243,3 +250,67 @@ function show(piece_array)
 	return
 end
 
+
+function centre(piece_pos, piece_id, piece_scale)
+	local pos = vmath.vector3(utils.get_px_from(piece_pos[2]), utils.get_px_from(utils.arr_coords[piece_pos[1]]), 0)
+	go.set_position(pos, piece_id)
+
+	-- Change to piece.scale
+	go.set_scale(piece_scale, piece_id)
+	
+end
+
+-- Validation helper function(s)
+
+function get_piece_location(go_id)
+	local move_from = {}
+
+	-- Get piece
+	for x = 1, 8 do
+		for y = 1, 8 do
+			if piece_array[x][y] ~= nil then
+				if piece_array[x][y].id == go_id then
+					move_from = {x, y}
+				end
+			end
+		end
+	end
+
+	return move_from
+end
+
+
+function get(current_state, valid, piece_colour)
+	if current_state == GAME_STATE.TURN_WHITE then
+		-- If a (W)HITE piece is trying to make a valid move then allow it
+		valid = piece_colour == "w" and valid
+
+		if valid then
+			current_state = GAME_STATE.TURN_BLACK
+		end
+
+	elseif current_state == GAME_STATE.TURN_BLACK then
+
+		-- Ai.move() ?
+		-- If a (B)LACK piece is trying to make a valid move then allow it
+		valid = piece_colour == "b" and valid
+		if valid then
+			current_state = GAME_STATE.TURN_WHITE
+		end
+	end
+	
+	return current_state, valid
+end
+
+
+function get_king(colour, array)
+	local king
+	for x = 1, 8 do
+		for y = 1, 8 do
+			piece = array[x][y]
+			if piece ~= nil and piece.name == "k" .. colour then
+				return piece
+			end
+		end
+	end
+end
