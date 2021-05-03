@@ -93,22 +93,30 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	moves = { 
 		capture_left=9, 
 		capture_right=7,
+		capture_left_diff={1, 1},
+		capture_right_diff={1, -1},
 		forward_one=8 
 	}
 
 	-- Negate (make negative, -n) the black pawn moves 
 	if self.colour == "b" then
 		for k, v in pairs(moves) do
-			moves[k] = -v
+			if type(v) ~= "table" then
+				moves[k] = -v
+			else
+				moves[k][1] = -v[1]
+			end
 		end
 	end
-	
+
 	-- Capture check
 	-- White Pawn taking pattern: 9 or 7 and opposing colour piece present there
 	-- Black Pawn taking pattern: -9 or -7 and as above
 	-- Compare current pos with new desired pos for capture patterns
 	if landing_square_or_piece ~= nil then
-		if diff == moves.capture_right or diff == moves.capture_left  and landing_square_or_piece.colour ~= self.colour then
+		if (diff == moves.capture_right and self.pos[1] - move[1] == moves.capture_left_diff[1] and self.pos[2] - move[2] == moves.capture_left_diff[2])
+		or (diff == moves.capture_left and self.pos[1] - move[1] == moves.capture_left_diff[1] and self.pos[2] - move[2] == moves.capture_left_diff[2])
+		and landing_square_or_piece.colour ~= self.colour then
 			valid = true
 			flag = "capture"
 		end

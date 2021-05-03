@@ -128,7 +128,6 @@ function on_message(self, message_id, message)
 						end
 					end
 					
-					-- ::continue::
 				end
 			end
 
@@ -152,7 +151,7 @@ function on_message(self, message_id, message)
 										print("NOT GAME OVER YET")
 										print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
 										game_over = false
-									return
+										return
 										-- current_state = GAME_STATE
 									end
 
