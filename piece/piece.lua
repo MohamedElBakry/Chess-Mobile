@@ -114,7 +114,7 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	-- Black Pawn taking pattern: -9 or -7 and as above
 	-- Compare current pos with new desired pos for capture patterns
 	if landing_square_or_piece ~= nil then
-		if (diff == moves.capture_right and self.pos[1] - move[1] == moves.capture_left_diff[1] and self.pos[2] - move[2] == moves.capture_left_diff[2])
+		if (diff == moves.capture_right and self.pos[1] - move[1] == moves.capture_right_diff[1] and self.pos[2] - move[2] == moves.capture_right_diff[2])
 		or (diff == moves.capture_left and self.pos[1] - move[1] == moves.capture_left_diff[1] and self.pos[2] - move[2] == moves.capture_left_diff[2])
 		and landing_square_or_piece.colour ~= self.colour then
 			valid = true
