@@ -50,6 +50,7 @@ function on_message(self, message_id, message)
 		go_id = message.id[1]
 		local move_from = get_piece_location(go_id)
 		local move_to = message.id[2]
+		print(move_from[1], move_from[2], "-->", move_to[1], move_to[2])
 
 		-- Error check
 		if move_from[1] == nil then
@@ -85,6 +86,8 @@ function on_message(self, message_id, message)
 		
 		-- If valid Piece:move(pos) and update piece_array
 		if valid then
+			get_king(piece.colour, piece_array).isChecked = false
+			
 			if flag == "capture" then
 				local captured_go_id = piece_array[move_to[1]][move_to[2]].id
 				msg.post(captured_go_id, "disable")

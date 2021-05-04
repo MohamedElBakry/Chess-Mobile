@@ -110,12 +110,14 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	end
 
 	-- Capture check
-	-- White Pawn taking pattern: 9 or 7 and opposing colour piece present there
-	-- Black Pawn taking pattern: -9 or -7 and as above
 	-- Compare current pos with new desired pos for capture patterns
 	if landing_square_or_piece ~= nil then
-		if (diff == moves.capture_right and self.pos[1] - move[1] == moves.capture_right_diff[1] and self.pos[2] - move[2] == moves.capture_right_diff[2])
-		or (diff == moves.capture_left and self.pos[1] - move[1] == moves.capture_left_diff[1] and self.pos[2] - move[2] == moves.capture_left_diff[2])
+		local capture_diff = {self.pos[1] - move[1], self.pos[2] - move[2]}
+		local is_capture_right_pattern = capture_diff[1] == moves.capture_right_diff[1] and capture_diff[2] == moves.capture_right_diff[2]
+		local is_capture_left_pattern = capture_diff[1] == moves.capture_left_diff[1] and capture_diff[2] == moves.capture_left_diff[2]
+		
+		if (((diff == moves.capture_right and is_capture_right_pattern) or (diff == moves.capture_left and is_capture_left_pattern))
+		or ((diff == moves.capture_right and is_capture_left_pattern) or (diff == moves.capture_left and is_capture_right_pattern)))
 		and landing_square_or_piece.colour ~= self.colour then
 			valid = true
 			flag = "capture"
@@ -127,8 +129,13 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	-- and this is the opposing team/colour's most recent move then en passant is valid
 	else 
 		if diff == moves.capture_right or diff == moves.capture_left then
-			-- Get the piece that is directly adjacent to this pawn
-			local piece = array[move[1] - 1][move[2]] or array[move[1] + 1][move[2]]
+			-- Get the piece that is directly adjacent to this pawn, because if we're for example white then we want the square 'below' the square we clicked
+			local piece
+			if move[1] ~= 1 and self.colour == "w" then
+				piece = array[move[1] + 1][move[2]]
+			elseif move[1] ~= 8 and self.colour == "b" then
+				piece = array[move[1] - 1][move[2]]
+			end
 			
 			if piece ~= nil and piece.colour ~= self.colour and piece.piece == "p" then
 				-- Check if it just moved 2 squares forward
@@ -199,11 +206,12 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 				if piece ~= nil then
 					print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
-					break
+					goto r_capture_check
 				end
 			end
 		end
-		
+
+	-- Horizontal
 	elseif equiv <= upper and equiv >= lower then
 		valid = true
 		-- Check the row for any pieces that stand between the rook and the desired end location
@@ -213,13 +221,14 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 				if piece ~= nil then
 					print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
-					break
+					goto r_capture_check
 				end
 			end
 		end
 		
 	end
 
+	::r_capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
 end
@@ -477,7 +486,7 @@ function Piece:get_valid_moves(array)
 	local valid, flag
 	for x = 1, 8 do
 		for y = 1, 8 do
-			valid, flag = self:isValid({x, y}, array)
+			valid = self:isValid({x, y}, array)
 			if valid then
 				table.insert(valid_moves, {x, y})
 			end
