@@ -106,68 +106,11 @@ function on_message(self, message_id, message)
 			-- CHECKMATE?
 			-- If the enemy king is in check, and has no valid moves,
 			-- and there are no moves by his pieces that will put him out of check, then there's a winner
-			local enemy_colour = "w"
-			if piece.colour == "w" then
-				enemy_colour = "b"
+			local game_over = is_checkmate(piece.colour, piece_array)
+			if game_over then
+				print("GAME OVER IS TRUE -- do stuff")
 			end
-
-			local enemy_king = get_king(enemy_colour, piece_array)
 			
-			-- Check if the enemy king is now in check
-			local our_piece, our_piece_flag
-			
-			for x = 1, 8 do 
-				for y = 1, 8 do
-					our_piece = piece_array[x][y]
-					
-					if our_piece ~= nil and our_piece.colour == piece.colour then
-					
-						our_piece_valid, our_piece_flag = our_piece:isValid(enemy_king.pos, piece_array)
-						if our_piece_valid and our_piece_flag == "capture" then
-							enemy_king.isChecked = true
-							goto is_checked
-						end
-					end
-					
-				end
-			end
-
-			::is_checked::
-			if enemy_king.isChecked then
-				if table.getn(enemy_king:get_valid_moves(piece_array)) == 0 then
-					local enemy_piece
-					local game_over = true
-					for x = 1, 8 do
-						for y = 1, 8 do
-
-							enemy_piece = piece_array[x][y]
-							if enemy_piece ~= nil and enemy_piece.colour == enemy_king.colour then
-								local piece_moves = enemy_piece:get_valid_moves(piece_array)
-								local any_valid_moves = false
-								for _, move in ipairs(piece_moves) do
-
-									any_valid_moves = is_king_not_checkable(true, move, enemy_piece, piece_array)
-									if any_valid_moves == true then
-										-- print("GAME OVER", piece.colour, "WINS!")
-										print("NOT GAME OVER YET")
-										print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
-										game_over = false
-										return
-										-- current_state = GAME_STATE
-									end
-
-								end
-							end
-
-						end
-					end
-					
-					if game_over then
-						print("GAME OVER", piece.colour, "WINS!")
-					end
-					
-				end
-			end
 
 		else
 			-- If the move is invalid, just take the piece back to the move_from location
@@ -221,6 +164,7 @@ function is_king_not_checkable(valid, move, moving_piece, array)
 
 end
 
+
 function show(piece_array)
 	local row_str = ""
 	for x = 1, 8 do
@@ -267,6 +211,80 @@ function get_piece_location(go_id)
 end
 
 
+-- This function may be doing too much in that it alters the enemy_king's state, when this could be done outside of the function
+function is_checkmate(piece_colour, piece_array)
+	
+	local enemy_colour = "w"
+	if piece_colour == "w" then
+		enemy_colour = "b"
+	end
+
+	local enemy_king = get_king(enemy_colour, piece_array)
+
+	-- Check if the enemy king is now in check
+	local our_piece, our_piece_flag
+	for x = 1, 8 do 
+		for y = 1, 8 do
+			our_piece = piece_array[x][y]
+
+			if our_piece ~= nil and our_piece.colour == piece_colour then
+				
+				our_piece_valid, our_piece_flag = our_piece:isValid(enemy_king.pos, piece_array)
+				if our_piece_valid and our_piece_flag == "capture" then
+					enemy_king.isChecked = true
+					goto is_checked
+				end
+			end
+		end
+	end
+
+	::is_checked::
+	if enemy_king.isChecked == false then
+		print("The " .. enemy_colour .. " king is not threatend")
+		return false
+	end
+	
+	if table.getn(enemy_king:get_valid_moves(piece_array)) > 0 then
+		print("The king can escape")
+		return false
+	end
+
+	-- Reach this point means that the enemy king is checked and has no valid moves to exit check
+	local enemy_piece
+	local game_over = true
+	
+	for x = 1, 8 do
+		for y = 1, 8 do
+			-- TODO: Clean up ifs
+			enemy_piece = piece_array[x][y]
+			-- if enemy_piece == nil then
+			-- 	goto continue
+			-- elseif enemy_piece.colour ~= enemy_king.colour then
+			-- 	goto continue 
+			-- end
+			
+			if enemy_piece ~= nil and enemy_piece.colour == enemy_king.colour then
+				local piece_moves = enemy_piece:get_valid_moves(piece_array)
+				local any_valid_moves = false
+				for _, move in ipairs(piece_moves) do
+
+					any_valid_moves = is_king_not_checkable(true, move, enemy_piece, piece_array)
+					if any_valid_moves == true then
+						print("NOT GAME OVER YET")
+						print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
+						game_over = false
+						return false
+					end
+				end
+			end
+			-- ::continue::
+		end
+	end
+	return true
+
+end
+
+-- TODO: rename this function
 function get(current_state, valid, piece_colour)
 	if current_state == GAME_STATE.TURN_WHITE then
 		-- If a (W)HITE piece is trying to make a valid move then allow it
