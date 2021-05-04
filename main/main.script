@@ -4,8 +4,6 @@ local rendercam = require "rendercam.rendercam"
 
 local piece_array = {}
 
--- Game ending - if a king has no valid moves (which don't put him in check) it's over
-
 local GAME_STATE = utils.enum({"START", "END", "TURN_WHITE", "TURN_BLACK", "WIN_WHITE", "WIN_BLACK", "STALEMATE"})
 local current_state = GAME_STATE.TURN_WHITE
 
@@ -66,7 +64,7 @@ function on_message(self, message_id, message)
 
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
-		valid = is_king_not_checkable(valid, flag, move_to, piece, piece.colour, piece_array)
+		valid = is_king_not_checkable(valid, move_to, piece, piece_array)
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
 		current_state, valid = get(current_state, valid, piece.colour)
@@ -148,7 +146,7 @@ function on_message(self, message_id, message)
 								local any_valid_moves = false
 								for _, move in ipairs(piece_moves) do
 
-									any_valid_moves = is_king_not_checkable(true, "", move, enemy_piece, enemy_piece.colour, piece_array)
+									any_valid_moves = is_king_not_checkable(true, move, enemy_piece, piece_array)
 									if any_valid_moves == true then
 										-- print("GAME OVER", piece.colour, "WINS!")
 										print("NOT GAME OVER YET")
@@ -187,24 +185,11 @@ end
 
 -- Return: bool
 -- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check
--- TODO: remove the flag parameter 
-function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
+function is_king_not_checkable(valid, move, moving_piece, array)
 
-	-- Change this to get_king(colour, array), as we address king.isChecked in this function anyway
-	local king_pos = {}
-	for x = 1, 8 do
-		for y = 1, 8 do
-			piece = array[x][y]
-			if piece ~= nil and piece.name == "k" .. colour then
-				king_pos = piece.pos
-				goto is_capturable
-			end
-		end
-	end
+	local king = get_king(moving_piece.colour, array)
 	
-	-- Make the move then check if the king can still be captured
-	-- Then undo it regardless
-	::is_capturable::
+	-- Make the move then check if the king can still be captured, then undo those changes regardless
 	
 	if valid == false then
 		return false
@@ -218,10 +203,10 @@ function is_king_not_checkable(valid, flag, move, moving_piece, colour, array)
 	for x = 1, 8 do
 		for y = 1, 8 do
 			local piece = array[x][y]
-			if piece ~= nil and piece.colour ~= colour then
-				local piece_valid, piece_flag = piece:isValid(king_pos, array)	
+			if piece ~= nil and piece.colour ~= moving_piece.colour then
+				local piece_valid, piece_flag = piece:isValid(king.pos, array)	
 				if piece_valid and piece_flag == "capture" then
-					array[king_pos[1]][king_pos[2]].isChecked = true 
+					king.isChecked = true
 					array[move[1]][move[2]] = temp_captured
 					array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
 					return false
