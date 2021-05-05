@@ -22,6 +22,9 @@ function Piece:new(id, name, pos, hasMoved)
 	self.hasMoved = hasMoved
 	self.prevPos = self.pos
 	self.scale = 0.45
+	if self.piece == "p" then
+		self.scale = self.scale - 0.04
+	end
 	
 	-- King specfic attribute
 	self.isChecked = false

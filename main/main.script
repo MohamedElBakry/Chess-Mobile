@@ -1,6 +1,7 @@
 local utils = require "utils-module.utils"
 local piece = require "piece.piece"
 local rendercam = require "rendercam.rendercam"
+local ai = require "game.ai"
 
 local piece_array = {}
 
@@ -28,11 +29,6 @@ function on_message(self, message_id, message)
 		for x, row in ipairs(piece_array) do
 			for y, piece_table in ipairs(row) do
 				local piece = utils.deepcopy(Piece:new(piece_table["id"], piece_table["name"], {x, y}, false))
-
-				-- Set the pawns to have a slightly smaller scale
-				if piece.piece == "p" then
-					piece.scale = piece.scale - 0.04  -- default scale is 0.45
-				end
 				
 				-- Replace the piece_table with the Piece function-object
 				piece_array[x][y] = piece
@@ -107,8 +103,11 @@ function on_message(self, message_id, message)
 			-- If the enemy king is in check, and has no valid moves,
 			-- and there are no moves by his pieces that will put him out of check, then there's a winner
 			local game_over = is_checkmate(piece.colour, piece_array)
-			if game_over then
-				print("GAME OVER IS TRUE -- do stuff")
+			if game_over and current_state == GAME_STATE.TURN_WHITE then
+				current_state = GAME_STATE.WIN_WHITE
+				
+			elseif game_over and current_state == GAME_STATE.TURN_BLACK then
+				current_state = GAME_STATE.WIN_BLACK
 			end
 			
 
@@ -120,11 +119,14 @@ function on_message(self, message_id, message)
 	end
 
 	show(piece_array)
+	print(ai.evaluate(piece_array))
+	
 	
 	return
 end
 
 -- [[ Helper Functions ]]
+-- TODO: Make Game class to 'do' and undo moves? 
 
 -- Return: bool
 -- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check
@@ -211,7 +213,6 @@ function get_piece_location(go_id)
 end
 
 
--- This function may be doing too much in that it alters the enemy_king's state, when this could be done outside of the function
 function is_checkmate(piece_colour, piece_array)
 	
 	local enemy_colour = "w"
@@ -296,7 +297,6 @@ function get(current_state, valid, piece_colour)
 
 	elseif current_state == GAME_STATE.TURN_BLACK then
 
-		-- Ai.move() ?
 		-- If a (B)LACK piece is trying to make a valid move then allow it
 		valid = piece_colour == "b" and valid
 		if valid then

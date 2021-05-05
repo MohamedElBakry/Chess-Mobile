@@ -55,6 +55,7 @@ end
 
 utils.deepcopy = deepcopy
 
+
 function utils.enum(table)
 	if type(table) ~= "table" then
 		return nil
@@ -69,6 +70,18 @@ function utils.enum(table)
 	end
 
 	return enum
+end
+
+
+function utils.map(func, table)
+
+	local new_table = {}
+	
+	for i, v in ipairs(table) do
+		new_table[i] = func(v)
+	end
+
+	return new_table
 end
 
 return utils
