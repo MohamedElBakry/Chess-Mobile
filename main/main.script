@@ -175,6 +175,7 @@ function get_piece_location(go_id)
 end
 
 
+-- TODO: Stalemate: king has 0 moves, he isn't in check, and his pieces have 0 moves
 function is_checkmate(piece_colour, piece_array)
 	
 	local enemy_colour = "w"

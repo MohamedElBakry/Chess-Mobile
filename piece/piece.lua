@@ -492,7 +492,11 @@ function Piece:get_valid_moves(array)
 		for y = 1, 8 do
 			move = {x, y}
 			valid = self:isValid(move, array)
-			valid = is_king_not_checkable(valid, move, self, array)
+			
+			if self.piece ~= "k" then
+				valid = is_king_not_checkable(valid, move, self, array)
+			end
+			
 			if valid then
 				table.insert(valid_moves, {x, y})
 			end
