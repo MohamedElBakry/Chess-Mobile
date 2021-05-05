@@ -66,7 +66,7 @@ function Piece:isValid(move, array, caller)
 	-- A variable to passed to isvalid_king to stop an infinite recursive self callback
 	local caller = caller or "external"
 	
-	-- Creating these functions may be costly
+	-- Creating these functions every time the function is run may be costly
 	local valid_hash = {
 		["p"] = function(m, a, d, l) return self:__isvalid_pawn(m, a, d, l) end,
 		["n"] = function(m, a, d, l) return self:__isvalid_knight(m, a, d, l) end,
@@ -76,19 +76,25 @@ function Piece:isValid(move, array, caller)
 		["k"] = function(m, a, d, l, c) return self:__isvalid_king(m, a, d, l, c) end
 	}
 
-	-- 
 	local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
 	local landing_square_or_piece = array[move[1]][move[2]]
 
 	-- Dynamically get the appropriate move validation function, and return the results
+
+
+	-- If we're a king piece, then we need to pass the special 'caller' argument 
 	if self.piece == "k" then
-		return valid_hash[self.piece](move, array, diff, landing_square_or_piece, caller)
+		valid, flag = valid_hash[self.piece](move, array, diff, landing_square_or_piece, caller)
+		return valid, flag
 	end
-	return valid_hash[self.piece](move, array, diff, landing_square_or_piece)
+
+	valid, flag = valid_hash[self.piece](move, array, diff, landing_square_or_piece)
+	-- valid = is_king_not_checkable(valid, move, self, array)
+	
+	return valid, flag
 end
 
-
--- TODO: Pawn promotion to all pieces but 
+-- TODO: Pawn promotion: allowed to all piece except the king
 function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -126,14 +132,14 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 			flag = "capture"
 		end
 		
-	-- En passant
-	-- Diagonal capture behind a pawn directly to the left or right, that just moved 2 squares forward
-	-- If there's an opposing pawn directly to this pawn's right or left, that just moved 2 steps forward,
-	-- and this is the opposing team/colour's most recent move then en passant is valid
-	else 
+	else
+		-- En passant
+		-- Diagonal capture behind a pawn directly to the left or right of us, which just moved 2 squares forward
 		if diff == moves.capture_right or diff == moves.capture_left then
+			
 			-- Get the piece that is directly adjacent to this pawn, because if we're for example white then we want the square 'below' the square we clicked
 			local piece
+			-- Special case where we make this check near the beginning or end of the board
 			if move[1] ~= 1 and self.colour == "w" then
 				piece = array[move[1] + 1][move[2]]
 			elseif move[1] ~= 8 and self.colour == "b" then
@@ -152,10 +158,10 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	end
 
 	-- Regular move check
+	-- First move can be 2 squares forward or 1 square
 	if diff == moves.forward_one and landing_square_or_piece == nil then
 		valid = true
-		-- Movement patterns +16 White, -16 Black if it's the first move, otherwise +/- 8
-		-- First move can be 2 squares forward or 1 square
+		
 	elseif self.hasMoved == false and diff == moves.forward_one * 2 and landing_square_or_piece == nil then
 		if self.colour == "b" then
 			valid = array[move[1] - 1][move[2]] == nil
@@ -164,13 +170,10 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 		end
 	end
 	
-	
 	return valid, flag
 end
 
 
--- Knight Move Valid Checking
--- Knight: -17, -15, -10, -6, 6, 10, 15, 17
 function Piece:__isvalid_knight(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -187,7 +190,6 @@ function Piece:__isvalid_knight(move, array, diff, landing_square_or_piece)
 end
 
 
--- Diff is 8 or 1
 function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -237,7 +239,6 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 end
 
 
--- Diff mod 9 or 7 == 0 is valid
 function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local valid, flag = false, nil
 	local diff = math.abs(diff)
@@ -486,10 +487,12 @@ end
 function Piece:get_valid_moves(array)
 	local valid_moves = {}
 
-	local valid, flag
+	local valid, flag, move
 	for x = 1, 8 do
 		for y = 1, 8 do
-			valid = self:isValid({x, y}, array)
+			move = {x, y}
+			valid = self:isValid(move, array)
+			valid = is_king_not_checkable(valid, move, self, array)
 			if valid then
 				table.insert(valid_moves, {x, y})
 			end
@@ -497,4 +500,56 @@ function Piece:get_valid_moves(array)
 	end
 	
 	return valid_moves
+end
+
+
+-- Return: bool
+-- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check too if so
+function is_king_not_checkable(valid, move, moving_piece, array)
+
+	local king = get_king(moving_piece.colour, array)
+
+	-- Make the move then check if the king can still be captured, then undo those changes regardless
+	if valid == false then
+		return false
+	end
+
+	local temp_captured = utils.deepcopy(array[move[1]][move[2]])
+	array[move[1]][move[2]] = moving_piece
+	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
+
+	local piece_valid
+	for x = 1, 8 do
+		for y = 1, 8 do
+			local piece = array[x][y]
+			-- Check if this enemy piece can capture this piece's king
+			if piece ~= nil and piece.colour ~= moving_piece.colour then
+				local piece_valid, piece_flag = piece:isValid(king.pos, array)
+				if piece_valid and piece_flag == "capture" then
+					king.isChecked = true
+					array[move[1]][move[2]] = temp_captured
+					array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
+					return false
+				end
+			end
+		end
+	end
+
+	array[move[1]][move[2]] = temp_captured
+	array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
+	return valid
+
+end
+
+
+function get_king(colour, array)
+	local king
+	for x = 1, 8 do
+		for y = 1, 8 do
+			piece = array[x][y]
+			if piece ~= nil and piece.name == "k" .. colour then
+				return piece
+			end
+		end
+	end
 end

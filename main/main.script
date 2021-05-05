@@ -128,44 +128,6 @@ end
 -- [[ Helper Functions ]]
 -- TODO: Make Game class to 'do' and undo moves? 
 
--- Return: bool
--- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check
-function is_king_not_checkable(valid, move, moving_piece, array)
-
-	local king = get_king(moving_piece.colour, array)
-	
-	-- Make the move then check if the king can still be captured, then undo those changes regardless
-	
-	if valid == false then
-		return false
-	end
-	
-	local temp_captured = utils.deepcopy(array[move[1]][move[2]])
-	array[move[1]][move[2]] = moving_piece
-	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
-
-	local piece_valid
-	for x = 1, 8 do
-		for y = 1, 8 do
-			local piece = array[x][y]
-			if piece ~= nil and piece.colour ~= moving_piece.colour then
-				local piece_valid, piece_flag = piece:isValid(king.pos, array)	
-				if piece_valid and piece_flag == "capture" then
-					king.isChecked = true
-					array[move[1]][move[2]] = temp_captured
-					array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
-					return false
-				end
-			end
-		end
-	end
-
-	array[move[1]][move[2]] = temp_captured
-	array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
-	return valid
-
-end
-
 
 function show(piece_array)
 	local row_str = ""
@@ -305,17 +267,4 @@ function get(current_state, valid, piece_colour)
 	end
 	
 	return current_state, valid
-end
-
-
-function get_king(colour, array)
-	local king
-	for x = 1, 8 do
-		for y = 1, 8 do
-			piece = array[x][y]
-			if piece ~= nil and piece.name == "k" .. colour then
-				return piece
-			end
-		end
-	end
 end
