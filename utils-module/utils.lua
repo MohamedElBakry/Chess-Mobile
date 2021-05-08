@@ -9,9 +9,10 @@ utils.arr_coords = {8, 7, 6, 5, 4, 3, 2, 1}
 
 -- Translate pixel coordinates to square x, y coordinates
 -- e.g. 800, 400
-window_width, window_height = window.get_size()
-width = (window_width / 8) 	
+window_width, window_height = 2000, 2000
+width = window_width / 8
 height = window_height / 8
+
 -- width = height
 print(width, height, xoffset, yoffset)
 print("WINDOW SIZE:::::::::::::", window_width, window_height)

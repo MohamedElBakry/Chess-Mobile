@@ -67,7 +67,12 @@ function on_input(self, action_id, action)
 
 			-- Set the position to be the centre of the square a piece is dragged into
 			-- Get the board coordinates
-			local board_coords = utils.px_to_xy({action.x, action.y})
+			local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
+			-- print(action_pos.x, action_pos.y, action.x, action.y)
+			
+			-- local board_coords = utils.px_to_xy({action.x, action.y})
+			local board_coords = utils.px_to_xy({action_pos.x, action_pos.y})
+			
 			print("Cursor board_coords:", board_coords[1], board_coords[2])
 			print("Dragged ID", self.dragged_id)
 			
