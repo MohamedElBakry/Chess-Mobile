@@ -36,6 +36,8 @@ function on_message(self, message_id, message)
 			end
 		end
 
+		-- TODO: check piece move validation
+		-- TODO: on piece click -- highlight valid moves
 		-- print("positions: ***", ai.move_gen_test(1, piece_array) )
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
@@ -54,28 +56,29 @@ function on_message(self, message_id, message)
 			print("move_from is nil... returning")
 			return
 		end
-		
-		-- Get the piece
-		local piece = utils.deepcopy(piece_array[move_from[1]][move_from[2]])
-		
+
 		-- Bounds check
 		if (move_to[1] < 1 or move_to[1] > 8) or (move_to[2] < 1 or move_to[2] > 8) then
-			centre(move_from, piece.id, piece.scale)
+			centre(move_from, go_id, piece_array[move_from[1]][move_from[2]].scale)
 			print("Out of bounds")
 			return
 		end
+		
+		-- Get the piece
+		local piece = utils.deepcopy(piece_array[move_from[1]][move_from[2]])
 		
 		local valid, flag = piece:isValid(move_to, piece_array)
 		print("VALIDITY:", valid, "FLAG:", flag)
 
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
-		valid = is_king_not_checkable(valid, move_to, piece, piece_array)
+		valid = is_king_not_checkable(valid, move_to, piece, piece_array, flag)
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
-		current_state, valid = get_turn(current_state, valid, piece.colour)
+-- 		current_state, valid = get_turn(current_state, valid, piece.colour)
 
 		-- Check for specific movement flags
+		-- TODO: prevent en passant if king will be in check
 		if valid and flag == "en_passant" then
 			
 			local adjacent_pawn = piece_array[move_to[1] - 1][move_to[2]] or piece_array[move_to[1] + 1][move_to[2]]

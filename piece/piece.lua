@@ -491,10 +491,10 @@ function Piece:get_valid_moves(array)
 	for x = 1, 8 do
 		for y = 1, 8 do
 			move = {x, y}
-			valid = self:isValid(move, array)
+			valid, flag = self:isValid(move, array)
 			
 			if self.piece ~= "k" then
-				valid = is_king_not_checkable(valid, move, self, array)
+				valid = is_king_not_checkable(valid, move, self, array, flag)
 			end
 			
 			if valid then
@@ -509,7 +509,7 @@ end
 
 -- Return: bool
 -- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check too if so
-function is_king_not_checkable(valid, move, moving_piece, array)
+function is_king_not_checkable(valid, move, moving_piece, array, flag)
 
 	local king = get_king(moving_piece.colour, array)
 
@@ -522,6 +522,17 @@ function is_king_not_checkable(valid, move, moving_piece, array)
 	array[move[1]][move[2]] = moving_piece
 	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
 
+	local adjacent_pawn_black, adjacent_pawn_white
+	if flag == "en_passant" then
+		adjacent_pawn_black = utils.deepcopy(array[move[1] - 1][move[2]])
+		adjacent_pawn_white = utils.deepcopy(array[move[1] + 1][move[2]])
+		if adjacent_pawn_black then
+			array[move[1] - 1][move[2]] = nil
+		elseif adjacent_pawn_white then
+			array[move[1] + 1][move[2]] = nil
+		end
+	end
+
 	local piece_valid
 	for x = 1, 8 do
 		for y = 1, 8 do
@@ -533,6 +544,13 @@ function is_king_not_checkable(valid, move, moving_piece, array)
 					king.isChecked = true
 					array[move[1]][move[2]] = temp_captured
 					array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
+					-- En passant specific undo
+					if flag == "en_passant" and adjacent_pawn_black ~= nil then
+						array[move[1] - 1][move[2]] = adjacent_pawn_black
+					elseif flag == "en_passant" and adjacent_pawn_white ~= nil then
+						array[move[1] + 1][move[2]] = adjacent_pawn_white
+					end
+					
 					return false
 				end
 			end
@@ -541,6 +559,12 @@ function is_king_not_checkable(valid, move, moving_piece, array)
 
 	array[move[1]][move[2]] = temp_captured
 	array[moving_piece.pos[1]][moving_piece.pos[2]] = moving_piece
+	if flag == "en_passant" and adjacent_pawn_black ~= nil then
+		array[move[1] - 1][move[2]] = adjacent_pawn_black
+	elseif flag == "en_passant" and adjacent_pawn_white ~= nil then
+		array[move[1] + 1][move[2]] = adjacent_pawn_white
+	end
+	
 	return valid
 
 end
