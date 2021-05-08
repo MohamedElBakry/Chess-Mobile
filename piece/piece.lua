@@ -209,7 +209,7 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
 				local piece = array[x][move[2]]
 				if piece ~= nil then
-					print(self.name, "PIECE IN BETWEEN:", piece.name)
+					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
 					goto r_capture_check
 				end
@@ -224,7 +224,7 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
 				local piece = array[move[1]][y]
 				if piece ~= nil then
-					print(self.name, "PIECE IN BETWEEN:", piece.name)
+					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
 					valid = false
 					goto r_capture_check
 				end
@@ -313,7 +313,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			while x < x_max and y < y_max do
 				local piece = array[x][y]
 				if piece ~= nil then
-					print(piece.name, x, y)
+					-- print(piece.name, x, y)
 					valid = false
 					goto b_capture_check
 				end
@@ -338,7 +338,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			while x < x_max and y < y_max or y > y_max do
 				local piece = array[x][y]
 				if piece ~= nil then
-					print(piece.name, x, y)
+					-- print(piece.name, x, y)
 					valid = false
 					goto b_capture_check
 				end
@@ -387,49 +387,52 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	-- 4 = Left, 3 = Right
 	if self.hasMoved == false and self.isChecked == false then
 		local piece = array[move[1]][move[2]]
-		if piece ~= nil and piece.piece == "r" and piece.hasMoved == false then
+		if piece ~= nil and piece.piece == "r" and self.colour == piece.colour and piece.hasMoved == false then
 			
 			-- If we want to castle king's side
 			if diff == 3 then
 				-- If the spaces between the king and rook are empty, castle
 				if array[self.pos[1]][self.pos[2] + 1] == nil and array[self.pos[1]][self.pos[2] + 2] == nil then
+					
 					-- Remove the pieces from the old positions
-					array[self.pos[1]][self.pos[2]] = nil
-					array[move[1]][move[2]] = nil
+					-- array[self.pos[1]][self.pos[2]] = nil
+					-- array[move[1]][move[2]] = nil
 					
 					-- Castle
-					self:move({self.pos[1], self.pos[2] + 2})
-					piece:move({self.pos[1], self.pos[2] - 1})
-					valid, flag = true, "castle"
+					-- self:move({self.pos[1], self.pos[2] + 2}, array)
+					-- piece:move({self.pos[1], self.pos[2] - 1}, array)
+					
+					valid, flag = true, "castle_kingside"
 				end
 					
 				-- If we want to castle queen's side
 			elseif diff == 4 then
 				-- If the 3 spaces between the king and rook queen's side are empty, castle
 				if array[self.pos[1]][self.pos[2] - 1] == nil and array[self.pos[1]][self.pos[2] - 2] == nil 
-					and array[self.pos[1]][self.pos[2] - 3] == nil then
+				and array[self.pos[1]][self.pos[2] - 3] == nil then
+					
 					-- Remove the pieces from the old positions
-					array[self.pos[1]][self.pos[2]] = nil
-					array[move[1]][move[2]] = nil
+					-- array[self.pos[1]][self.pos[2]] = nil
+					-- array[move[1]][move[2]] = nil
 					
 					-- Castle
-					self:move({self.pos[1], self.pos[2] - 2})
-					piece:move({self.pos[1], self.pos[2] + 1})
-					valid, flag = true, "castle"
+					-- self:move({self.pos[1], self.pos[2] - 2}, array)
+					-- piece:move({self.pos[1], self.pos[2] + 1}, array)
+					valid, flag = true, "castle_queenside"
 				end
 			end 
 
 			-- Update the array with the new piece positions
-			array[self.pos[1]][self.pos[2]] = self
-			array[piece.pos[1]][piece.pos[2]] = piece
+			-- array[self.pos[1]][self.pos[2]] = self
+			-- array[piece.pos[1]][piece.pos[2]] = piece
 
 			-- Update the king and rook based on the array 
-			local pos = vmath.vector3(utils.get_px_from(self.pos[2]), utils.get_px_from(utils.arr_coords[self.pos[1]]), 0)
-			go.set_position(pos, self.id)
-
-			local rook = piece
-			pos = vmath.vector3(utils.get_px_from(rook.pos[2]), utils.get_px_from(utils.arr_coords[rook.pos[1]]), 0)
-			go.set_position(pos, rook.id)
+-- 			local pos = vmath.vector3(utils.get_px_from(self.pos[2]), utils.get_px_from(utils.arr_coords[self.pos[1]]), 0)
+-- 			go.set_position(pos, self.id)
+-- 
+-- 			local rook = piece
+-- 			pos = vmath.vector3(utils.get_px_from(rook.pos[2]), utils.get_px_from(utils.arr_coords[rook.pos[1]]), 0)
+-- 			go.set_position(pos, rook.id)
 			
 		end
 	end
@@ -440,19 +443,41 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	if caller == "external" then
 		-- Put the king in that position to allow enemy pieces to calculate piece:isValid
 		-- and remove him for the previous position temporarily
-		local temp_piece = utils.deepcopy(array[move[1]][move[2]])
-		array[move[1]][move[2]] = utils.deepcopy(self)
-		array[self.pos[1]][self.pos[2]] = nil
+		local temp_piece
+
+		if flag == "castle_kingside" or flag == "castle_queenside" then
+			temp_piece = self:_pretend_castle(move, flag, array)
+		else
+			temp_piece = utils.deepcopy(array[move[1]][move[2]])  -- Copy the piece (or empty) we're about to move onto
+			array[move[1]][move[2]] = self  -- Move to the new position
+			array[self.pos[1]][self.pos[2]] = nil  -- Remove the previous position
+		end
+
+		local piece_valid, piece_flag 
 		for x = 1, 8 do
 			for y = 1, 8 do
 				local piece = array[x][y]
 				if piece ~= nil and piece ~= self.piece and piece.colour ~= self.colour then
-					local piece_valid, piece_flag = piece:isValid(move, array, "internal")	
-					if piece_valid and piece_flag == "capture" then
+					piece_valid, piece_flag = piece:isValid(move, array, "internal")
+					
+					-- Castling specific capture checks
+					if flag == "castle_kingside" then
+						piece_valid, piece_flag = piece:isValid({move[1], move[2] - 1}, array, "internal")
 						
+					elseif flag == "castle_queenside" then
+						piece_valid, piece_flag = piece:isValid({move[1], move[2] + 2}, array, "internal")
+					end
+					
+					if piece_valid and piece_flag == "capture" then
+
 						-- Remove the king from that 'imaginary' position
-						array[move[1]][move[2]] = temp_piece
-						array[self.pos[1]][self.pos[2]] = self
+						if flag == "castle_kingside" or flag == "castle_queenside" then
+							self:_undo_pretend_castle(temp_piece, move, flag, array)
+						else
+							array[move[1]][move[2]] = temp_piece
+							array[self.pos[1]][self.pos[2]] = self
+						end
+						
 						return false, nil
 					end
 				end
@@ -460,12 +485,58 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 		end
 		
 		-- Remove the king from that 'imaginary' position in case we haven't returned from the function
-		array[move[1]][move[2]] = temp_piece
-		array[self.pos[1]][self.pos[2]] = self
+		if flag == "castle_kingside" or flag == "castle_queenside" then
+			self:_undo_pretend_castle(temp_piece, move, flag, array)
+			return valid, flag
+		else
+			array[move[1]][move[2]] = temp_piece
+			array[self.pos[1]][self.pos[2]] = self
+		end
+
 	end
 	
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
+end
+
+
+function Piece:_pretend_castle(move, flag, array)
+	local rook = utils.deepcopy(array[move[1]][move[2]])
+	
+	if flag == "castle_kingside" then
+		
+		-- 'Pretend' to castle
+		array[move[1]][move[2] - 1] = self
+		array[move[1]][move[2] - 2] = rook
+		
+		array[self.pos[1]][self.pos[2]] = nil
+		array[move[1]][move[2]] = nil
+
+	else
+		-- 'Pretend' to castle queenside
+		array[move[1]][move[2] + 2] = self
+		array[move[1]][move[2] + 1] = rook
+		
+		array[self.pos[1]][self.pos[2]] = nil  -- Update the array with our new position
+		array[move[1]][move[2]] = nil
+	end
+
+	return rook
+end
+
+
+function Piece:_undo_pretend_castle(rook, move, flag, array)
+	
+	if flag == "castle_kingside" then
+		array[move[1]][move[2] - 1] = nil  -- Remove the king
+		array[move[1]][move[2] - 2] = nil  -- Remove the rook
+	elseif flag == "castle_queenside" then
+		array[move[1]][move[2] + 2] = nil  -- Remove the king
+		array[move[1]][move[2] + 1] = nil  -- Remove the rook
+	end
+	
+	array[move[1]][move[2]] = rook
+	array[self.pos[1]][self.pos[2]] = self
 end
 
 

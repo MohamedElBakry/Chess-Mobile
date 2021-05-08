@@ -38,7 +38,7 @@ function on_message(self, message_id, message)
 
 		-- TODO: check piece move validation
 		-- TODO: on piece click -- highlight valid moves
-		-- print("positions: ***", ai.move_gen_test(1, piece_array) )
+		print("positions: ***", ai.move_gen_test(2, piece_array) )
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
@@ -99,16 +99,34 @@ function on_message(self, message_id, message)
 				local captured_go_id = piece_array[move_to[1]][move_to[2]].id
 				msg.post(captured_go_id, "disable")
 				
-			elseif flag == "castle" then 
-				-- The king's valid function deals with this, no more needs to be done
-				return
+			elseif flag == "castle_kingside" then
+				local rook = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
+				
+				piece:move({move_to[1], move_to[2] - 1}, piece_array)
+				rook:move({piece.pos[1], piece.pos[2] - 1}, piece_array)
+				
+				centre(piece.pos, piece.id, piece.scale)
+				centre(rook.pos, rook.id, rook.scale)
+				goto castled
+				
+			elseif flag == "castle_queenside" then
+				local rook = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
+				
+				piece:move({move_to[1], move_to[2] + 2}, piece_array)
+				rook:move({piece.pos[1], piece.pos[2] + 1}, piece_array)
+				
+				centre(piece.pos, piece.id, piece.scale)
+				centre(rook.pos, rook.id, rook.scale)
+				goto castled
 			end
 
+			
 			piece:move(move_to, piece_array)
 
 			-- Centre the piece in case it glitches out and just hovers over the captured square
 			centre(piece.pos, piece.id, piece.scale)
 
+			::castled::
 			-- Track the last moved piece for en passant
 			team_colour[piece.colour]["last_moved_piece_id"] = piece.id
 
@@ -122,6 +140,8 @@ function on_message(self, message_id, message)
 			elseif game_over and current_state == GAME_STATE.TURN_BLACK then
 				current_state = GAME_STATE.WIN_BLACK
 			end
+
+			-- Stalemate?
 			
 		else
 			-- If the move is invalid, just take the piece back to the move_from location
