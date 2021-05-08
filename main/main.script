@@ -35,6 +35,9 @@ function on_message(self, message_id, message)
 				
 			end
 		end
+
+		print("positions: ***", ai.move_gen_test(1, piece_array) )
+		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
 	-- Move Validation
@@ -63,7 +66,7 @@ function on_message(self, message_id, message)
 		valid = is_king_not_checkable(valid, move_to, piece, piece_array)
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
-		current_state, valid = get(current_state, valid, piece.colour)
+		current_state, valid = get_turn(current_state, valid, piece.colour)
 
 		-- Check for specific movement flags
 		if valid and flag == "en_passant" then
@@ -110,7 +113,6 @@ function on_message(self, message_id, message)
 				current_state = GAME_STATE.WIN_BLACK
 			end
 			
-
 		else
 			-- If the move is invalid, just take the piece back to the move_from location
 			centre(move_from, piece.id, piece.scale)
@@ -119,10 +121,15 @@ function on_message(self, message_id, message)
 	end
 
 	show(piece_array)
-	print(ai.evaluate(piece_array))
+
+	-- print(ai.evaluate(piece_array))
 	
 	
 	return
+end
+
+function on_input(self, action_id, action)
+	
 end
 
 -- [[ Helper Functions ]]
@@ -205,6 +212,24 @@ function is_checkmate(piece_colour, piece_array)
 	::is_checked::
 	if enemy_king.isChecked == false then
 		print("The " .. enemy_colour .. " king is not threatend")
+		-- Stalemate if king has 0 valid moves and all his pieces have 0 valid moves
+		local all_pieces_moves
+		if table.getn(enemy_king:get_valid_moves(piece_array)) == 0 then
+			-- TODO: currently wrong -- for every row, return if the first piece of that row has valid moves
+			-- Change to every piece of that row
+			all_pieces_moves = utils.map(
+			function(row)
+				for x = 1, 8 do
+					local piece = row[x]
+					if piece ~= nil and piece.colour == enemy_colour then
+						print(piece.name)
+						return table.getn(piece:get_valid_moves(piece_array)) == 0 
+					end 
+				end
+			end, piece_array)
+			
+		end
+		
 		return false
 	end
 	
@@ -249,7 +274,7 @@ function is_checkmate(piece_colour, piece_array)
 end
 
 -- TODO: rename this function
-function get(current_state, valid, piece_colour)
+function get_turn(current_state, valid, piece_colour)
 	if current_state == GAME_STATE.TURN_WHITE then
 		-- If a (W)HITE piece is trying to make a valid move then allow it
 		valid = piece_colour == "w" and valid
