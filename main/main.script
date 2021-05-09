@@ -1,7 +1,7 @@
-local utils = require "utils-module.utils"
-local piece = require "piece.piece"
+local utils = utils or require "utils-module.utils"
+local piece = piece or require "piece.piece"
 local rendercam = require "rendercam.rendercam"
-local ai = require "game.ai"
+local ai = ai or require "game.ai"
 
 local piece_array = {}
 
@@ -38,7 +38,7 @@ function on_message(self, message_id, message)
 
 		-- TODO: check piece move validation
 		-- TODO: on piece click -- highlight valid moves
-		print("positions: ***", ai.move_gen_test(2, piece_array) )
+		print("positions: ***", ai.move_gen_test(1, piece_array) )
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
@@ -159,12 +159,21 @@ function on_message(self, message_id, message)
 end
 
 function on_input(self, action_id, action)
-	-- local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
-	-- print(action_pos)
-	-- 
-	-- local y = utils.get_px_from(utils.arr_coords[board_coords[1]]) -- Convert back from array coordinates to true coordiantes
-	-- local x = utils.get_px_from(board_coords[2])
-	-- print(x, y)
+
+	-- Show the valid moves
+	-- if action_id == hash("touch") then
+	-- 	local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
+	-- 	local board_coords = utils.px_to_xy({action_pos.x, action_pos.y})
+	-- 	
+	-- 	if board_coords and board_coords[1] > 8 or board_coords[1] < 1 or board_coords[2] > 8 or board_coords[2] < 1 then
+	-- 		return
+	-- 	end
+	-- 	
+	-- 	local piece = piece_array[board_coords[1]][board_coords[2]]
+	-- 	local moves = piece:get_valid_moves(piece_array)
+	-- end
+	
+	
 end
 
 -- [[ Helper Functions ]]

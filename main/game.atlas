@@ -3,51 +3,19 @@ images {
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/assets/chess-pack/chess-bishop-black.png"
+  image: "/assets/chess-pieces/square brown dark_png_512px.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/assets/chess-pack/chess-bishop-white.png"
+  image: "/assets/chess-pieces/square brown light_png_512px.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/assets/chess-pack/chess-king-black.png"
+  image: "/assets/chess-pieces/square gray dark _png_512px.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/assets/chess-pack/chess-king-white.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-knight-white.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-pawn-black.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-pawn-white.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-queen-black.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-queen-white.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-rook-black.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-rook-white.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pack/chess-knight-black.png"
+  image: "/assets/chess-pieces/square gray light _png_512px.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 margin: 0

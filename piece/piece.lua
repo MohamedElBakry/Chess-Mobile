@@ -7,6 +7,15 @@ local utils = require "utils-module.utils"
 -- Meta Class
 Piece = {id="", name="", pos={}, hasMoved=false}
 
+valid_hash = {
+	["p"] = function(p, m, a, d, l) return p:__isvalid_pawn(m, a, d, l) end,
+	["n"] = function(p, m, a, d, l) return p:__isvalid_knight(m, a, d, l) end,
+	["r"] = function(p, m, a, d, l) return p:__isvalid_rook(m, a, d, l) end,
+	["b"] = function(p, m, a, d, l) return p:__isvalid_bishop(m, a, d, l) end,
+	["q"] = function(p, m, a, d, l) return p:__isvalid_queen(m, a, d, l) end,
+	["k"] = function(p, m, a, d, l, c) return p:__isvalid_king(m, a, d, l, c) end
+}
+
 -- Dervied Class
 function Piece:new(id, name, pos, hasMoved)
 	
@@ -22,6 +31,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.hasMoved = hasMoved
 	self.prevPos = self.pos
 	self.scale = 0.45
+	
 	if self.piece == "p" then
 		self.scale = self.scale - 0.04
 	end
@@ -50,6 +60,12 @@ function Piece:move(pos, piece_array)
 	
 end
 
+
+function Piece:_fake_move(pos, flag, piece_array)
+	
+end
+
+
 -- Get a 'representation' of the position
 function Piece:get_repr_pos()
 	return "(" .. self.pos[1] .. ", " .. self.pos[2] .. ")"
@@ -67,14 +83,14 @@ function Piece:isValid(move, array, caller)
 	local caller = caller or "external"
 	
 	-- Creating these functions every time the function is run may be costly
-	local valid_hash = {
-		["p"] = function(m, a, d, l) return self:__isvalid_pawn(m, a, d, l) end,
-		["n"] = function(m, a, d, l) return self:__isvalid_knight(m, a, d, l) end,
-		["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
-		["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end,
-		["q"] = function(m, a, d, l) return self:__isvalid_queen(m, a, d, l) end,
-		["k"] = function(m, a, d, l, c) return self:__isvalid_king(m, a, d, l, c) end
-	}
+	-- local valid_hash = {
+	-- 	["p"] = function(m, a, d, l) return self:__isvalid_pawn(m, a, d, l) end,
+	-- 	["n"] = function(m, a, d, l) return self:__isvalid_knight(m, a, d, l) end,
+	-- 	["r"] = function(m, a, d, l) return self:__isvalid_rook(m, a, d, l) end,
+	-- 	["b"] = function(m, a, d, l) return self:__isvalid_bishop(m, a, d, l) end,
+	-- 	["q"] = function(m, a, d, l) return self:__isvalid_queen(m, a, d, l) end,
+	-- 	["k"] = function(m, a, d, l, c) return self:__isvalid_king(m, a, d, l, c) end
+	-- }
 
 	local diff = utils.get_equivalent(self.pos[1], self.pos[2]) - utils.get_equivalent(move[1], move[2])
 	local landing_square_or_piece = array[move[1]][move[2]]
@@ -84,11 +100,11 @@ function Piece:isValid(move, array, caller)
 
 	-- If we're a king piece, then we need to pass the special 'caller' argument 
 	if self.piece == "k" then
-		valid, flag = valid_hash[self.piece](move, array, diff, landing_square_or_piece, caller)
+		valid, flag = valid_hash[self.piece](self, move, array, diff, landing_square_or_piece, caller)
 		return valid, flag
 	end
 
-	valid, flag = valid_hash[self.piece](move, array, diff, landing_square_or_piece)
+	valid, flag = valid_hash[self.piece](self, move, array, diff, landing_square_or_piece)
 	-- valid = is_king_not_checkable(valid, move, self, array)
 	
 	return valid, flag
