@@ -20,6 +20,7 @@ function init(self)
 	msg.post(".", "acquire_input_focus")
 end
 
+
 function on_message(self, message_id, message)
 	print("MESSAGE:", message_id, message.id)
 	if message_id == hash("piece_array") then
@@ -38,7 +39,7 @@ function on_message(self, message_id, message)
 
 		-- TODO: check piece move validation
 		-- TODO: on piece click -- highlight valid moves
-		print("positions: ***", ai.move_gen_test(1, piece_array) )
+		-- print("positions: ***", ai.move_gen_test(1, piece_array))
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
@@ -75,79 +76,45 @@ function on_message(self, message_id, message)
 		valid = is_king_not_checkable(valid, move_to, piece, piece_array, flag)
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
--- 		current_state, valid = get_turn(current_state, valid, piece.colour)
-
-		-- Check for specific movement flags
-		-- TODO: prevent en passant if king will be in check
-		if valid and flag == "en_passant" then
-			
-			local adjacent_pawn = piece_array[move_to[1] - 1][move_to[2]] or piece_array[move_to[1] + 1][move_to[2]]
-			if adjacent_pawn.id ~= team_colour[adjacent_pawn.colour]["last_moved_piece_id"] then
-				valid = false
-				
-			else
-				msg.post(adjacent_pawn.id, "disable")
-				piece_array[adjacent_pawn.pos[1]][adjacent_pawn.pos[2]] = nil
-			end
-		end
-		
-		-- If valid Piece:move(pos) and update piece_array
+		-- current_state, valid = get_turn(current_state, valid, piece.colour)
 		if valid then
 			get_king(piece.colour, piece_array).isChecked = false
-			
-			if flag == "capture" then
-				local captured_go_id = piece_array[move_to[1]][move_to[2]].id
-				msg.post(captured_go_id, "disable")
-				
-			elseif flag == "castle_kingside" then
-				local rook = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
-				
-				piece:move({move_to[1], move_to[2] - 1}, piece_array)
-				rook:move({piece.pos[1], piece.pos[2] - 1}, piece_array)
-				
-				centre(piece.pos, piece.id, piece.scale)
-				centre(rook.pos, rook.id, rook.scale)
-				goto castled
-				
-			elseif flag == "castle_queenside" then
-				local rook = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
-				
-				piece:move({move_to[1], move_to[2] + 2}, piece_array)
-				rook:move({piece.pos[1], piece.pos[2] + 1}, piece_array)
-				
-				centre(piece.pos, piece.id, piece.scale)
-				centre(rook.pos, rook.id, rook.scale)
-				goto castled
-			end
-
-			
-			piece:move(move_to, piece_array)
-
-			-- Centre the piece in case it glitches out and just hovers over the captured square
-			centre(piece.pos, piece.id, piece.scale)
-
-			::castled::
-			-- Track the last moved piece for en passant
-			team_colour[piece.colour]["last_moved_piece_id"] = piece.id
-
-			-- CHECKMATE?
-			-- If the enemy king is in check, and has no valid moves,
-			-- and there are no moves by his pieces that will put him out of check, then there's a winner
-			local game_over = is_checkmate(piece.colour, piece_array)
-			if game_over and current_state == GAME_STATE.TURN_WHITE then
-				current_state = GAME_STATE.WIN_WHITE
-				
-			elseif game_over and current_state == GAME_STATE.TURN_BLACK then
-				current_state = GAME_STATE.WIN_BLACK
-			end
-
-			-- Stalemate?
-			
-		else
-			-- If the move is invalid, just take the piece back to the move_from location
-			centre(move_from, piece.id, piece.scale)
-			
 		end
+
+		if valid == false then
+			piece:centre()
+			show(piece_array)
+			return
+		end
+
+		-- TODO: rename team_colour to last_moved_piece_by["colour"]
+		piece:move(move_to, flag, piece_array, team_colour)
+		
+		-- Centre the piece in case it glitches out and just hovers over the captured square
+		-- centre(piece.pos, piece.id, piece.scale)
+
+		-- ::castled::
+		-- Track the last moved piece for en passant
+		team_colour[piece.colour]["last_moved_piece_id"] = piece.id
+
+		-- CHECKMATE?
+		-- If the enemy king is in check, and has no valid moves,
+		-- and there are no moves by his pieces that will put him out of check, then there's a winner
+		local game_over = is_checkmate(piece.colour, piece_array)
+		if game_over and current_state == GAME_STATE.TURN_WHITE then
+			current_state = GAME_STATE.WIN_WHITE
+			
+		elseif game_over and current_state == GAME_STATE.TURN_BLACK then
+			current_state = GAME_STATE.WIN_BLACK
+		end
+
+		-- Stalemate?
+		
+	-- else
+		-- If the move is invalid, just take the piece back to the move_from location
+		-- centre(move_from, piece.id, piece.scale)
+		
+	-- end
 	end
 
 	show(piece_array)
@@ -197,14 +164,14 @@ function show(piece_array)
 end
 
 
-function centre(piece_pos, piece_id, piece_scale)
-	local pos = vmath.vector3(utils.get_px_from(piece_pos[2]), utils.get_px_from(utils.arr_coords[piece_pos[1]]), 0)
-	go.set_position(pos, piece_id)
-
-	-- Change to piece.scale
-	go.set_scale(piece_scale, piece_id)
-	
-end
+-- function centre(piece_pos, piece_id, piece_scale)
+-- 	local pos = vmath.vector3(utils.get_px_from(piece_pos[2]), utils.get_px_from(utils.arr_coords[piece_pos[1]]), 0)
+-- 	go.set_position(pos, piece_id)
+-- 
+-- 	-- Change to piece.scale
+-- 	go.set_scale(piece_scale, piece_id)
+-- 	
+-- end
 
 -- Validation helper function(s)
 

@@ -7,7 +7,7 @@ local utils = require "utils-module.utils"
 -- Meta Class
 Piece = {id="", name="", pos={}, hasMoved=false}
 
-valid_hash = {
+local valid_hash = {
 	["p"] = function(p, m, a, d, l) return p:__isvalid_pawn(m, a, d, l) end,
 	["n"] = function(p, m, a, d, l) return p:__isvalid_knight(m, a, d, l) end,
 	["r"] = function(p, m, a, d, l) return p:__isvalid_rook(m, a, d, l) end,
@@ -31,6 +31,7 @@ function Piece:new(id, name, pos, hasMoved)
 	self.hasMoved = hasMoved
 	self.prevPos = self.pos
 	self.scale = 0.45
+	self.prevHasMoved = hasMoved
 	
 	if self.piece == "p" then
 		self.scale = self.scale - 0.04
@@ -44,9 +45,14 @@ end
 
 
 --[[ Piece Methods ]]
-function Piece:move(pos, piece_array)
+
+-- TODO: Make it so that piece:move deals with the specific move flags too.
+-- Add flag parameter
+function Piece:move(move, flag, piece_array, last_moved)
 	self.prevPos = self.pos
-	self.pos = pos
+	self.pos = move
+	
+	self.prevHasMoved = self.hasMoved
 	self.hasMoved = true
 
 	-- If a king moves, then he must've made a valid move that puts him out of check
@@ -54,25 +60,61 @@ function Piece:move(pos, piece_array)
 		self.isChecked = false
 	end
 
-	-- Reflect positional changes in the piece_array
+	if flag == "en_passant" then
+		
+		local adjacent_pawn = piece_array[move[1] - 1][move[2]] or piece_array[move[1] + 1][move[2]]  -- Double check this to ensure the wrong pawn is not being targetted
+		if adjacent_pawn ~= nil and adjacent_pawn.id == last_moved[adjacent_pawn.colour]["last_moved_piece_id"] then
+			msg.post(adjacent_pawn.id, "disable")
+			piece_array[adjacent_pawn.pos[1]][adjacent_pawn.pos[2]] = nil
+			
+			-- piece_array[self.pos[1]][self.pos[2]] = self
+		end
+		
+	elseif flag == "capture" then
+		local captured_go_id = piece_array[move[1]][move[2]].id
+		msg.post(captured_go_id, "disable")
+
+	elseif flag == "castle_kingside" then
+		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
+
+		self.pos = {move[1], move[2] - 1}
+		-- piece_array[self.pos[1]][self.pos[2]] = self
+
+		rook.pos = {self.pos[1], self.pos[2] - 1}
+		piece_array[rook.pos[1]][rook.pos[2]] = rook
+		piece_array[rook.prevPos[1]][rook.prevPos[2]] = nil
+
+		rook:centre()
+
+	elseif flag == "castle_queenside" then
+		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
+
+		self.pos = {move[1], move[2] + 2}
+		-- piece_array[self.pos[1]][self.pos[2]] = self
+
+		rook.pos = {self.pos[1], self.pos[2] + 1}
+		piece_array[rook.pos[1]][rook.pos[2]] = rook
+		piece_array[rook.prevPos[1]][rook.prevPos[2]] = nil
+
+		rook:centre()
+	end
+
 	piece_array[self.pos[1]][self.pos[2]] = self
-	piece_array[self.prevPos[1]][self.prevPos[2]] = nil
+	piece_array[self.prevPos[1]][self.prevPos[2]] = nil  -- Clean up
+	self:centre()
 	
 end
 
 
-function Piece:_fake_move(pos, flag, piece_array)
+function Piece:undo_move(move, flag, piece_array)
 	
 end
 
+function Piece:centre()
+	local pos = vmath.vector3(utils.get_px_from(self.pos[2]), utils.get_px_from(utils.arr_coords[self.pos[1]]), 0)
+	go.set_position(pos, self.id)
 
--- Get a 'representation' of the position
-function Piece:get_repr_pos()
-	return "(" .. self.pos[1] .. ", " .. self.pos[2] .. ")"
-end
-
-function Piece:set_pos(pos)
-	self.pos = pos
+	go.set_scale(self.scale, self.id)
 end
 
 function Piece:isValid(move, array, caller)
