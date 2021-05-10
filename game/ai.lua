@@ -112,36 +112,85 @@ function search(depth, piece_array)
 	return max
 end
 
-function move_gen_test(depth, piece_array)
+function move_gen_test(depth, piece_array, last_moved)
 	if depth == 0 then
 		return 1 
 	end
 
 	local moves = generate_moves(piece_array)
 	local num_positions = 0
-	local move_from
-	local move_to
+	local move_from, move_to, flag
 	local temp_landing_square
 	
-	for i, move in ipairs(moves) do
-		move_from = move[1]
-		move_to = move[2]
+	for i, move_data in ipairs(moves) do
+		move_from = move_data[1]
+		move_to = move_data[2]
+		flag = move_data[3]
 
+		local piece = piece_array[move_from[1]][move_from[2]]
+		
 		-- Make move
-		temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
-		piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
-		piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
+		piece:move(move_to, flag, piece_array, last_moved)
+		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
+		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
+		-- piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
 
 		-- Eval
 		num_positions = num_positions + move_gen_test(depth - 1, piece_array)
 
 		-- Unmake
-		piece_array[move_from[1]][move_from[2]] = utils.deepcopy(piece_array[move_to[1]][move_to[2]])  -- Move the original moving piece back
-		piece_array[move_to[1]][move_to[2]] = temp_landing_square
+		piece:undo_last_move(flag, piece_array)
+		-- piece_array[move_from[1]][move_from[2]] = utils.deepcopy(piece_array[move_to[1]][move_to[2]])  -- Move the original moving piece back
+		-- piece_array[move_to[1]][move_to[2]] = temp_landing_square
 	end
 
 	return num_positions
 end
+
+function _co(depth, piece_array, last_moved)
+	if depth == 0 then
+		return 1 
+	end
+
+	local moves = generate_moves(piece_array)
+	local num_positions = 0
+	local move_from, move_to, flag
+	local temp_landing_square
+
+	for i, move_data in ipairs(moves) do
+		move_from = move_data[1]
+		move_to = move_data[2]
+		flag = move_data[3]
+
+		local piece = piece_array[move_from[1]][move_from[2]]
+
+
+		-- Make move
+		piece:move(move_to, flag, piece_array, last_moved)
+		
+		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
+		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
+		-- piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
+
+		-- Eval
+		num_positions = num_positions + _co(depth - 1, piece_array)
+		if num_positions > 337 and piece.piece == "n" then
+			print(move_from[1], move_from[2], "--->", move_to[1], move_to[2], utils.get_equivalent(move_from[1], move_from[2]) - utils.get_equivalent(move_to[1], move_to[2]))
+		end
+		coroutine.yield(num_positions)
+
+		-- Unmake
+		piece:undo_last_move(flag, piece_array)
+		-- piece_array[move_from[1]][move_from[2]] = utils.deepcopy(piece_array[move_to[1]][move_to[2]])  -- Move the original moving piece back
+		-- piece_array[move_to[1]][move_to[2]] = temp_landing_square
+
+	end
+
+	-- coroutine.yield(num_positions)
+	return num_positions
+end
+
+ai.co = coroutine.create(_co)
 
 ai.move_gen_test = move_gen_test
 
@@ -166,8 +215,8 @@ function generate_moves(piece_array)
 			piece = piece_array[x][y]
 			if piece ~= nil and piece.colour == current_colour then
 				-- for every valid move of this piece, add it to the moves table
-				for _, move in ipairs(piece:get_valid_moves(piece_array)) do
-					table.insert(moves, { {x, y}, move })
+				for _, move_and_flag in ipairs(piece:get_valid_moves(piece_array)) do
+					table.insert(moves, { {x, y}, move_and_flag[1], move_and_flag[2] })
 				end
 			end
 		end

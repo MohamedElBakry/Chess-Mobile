@@ -39,7 +39,19 @@ function on_message(self, message_id, message)
 
 		-- TODO: check piece move validation
 		-- TODO: on piece click -- highlight valid moves
-		-- print("positions: ***", ai.move_gen_test(1, piece_array))
+		-- TODO: coroutine move --> show(piece_array)/display --> undo
+		-- print("positions: ***", ai.move_gen_test(1, piece_array, team_colour))
+		
+		-- Cycle through all possible permutations up to depth n, and cancel the timer once reached
+		handle = timer.delay(0, true, function()
+			if coroutine.status(ai.co) == "suspended" then
+				print("positions: ******", coroutine.resume(ai.co, 2, piece_array, team_colour))
+				show(piece_array)
+			else
+				timer.cancel(handle)
+			end
+		end)
+		
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
