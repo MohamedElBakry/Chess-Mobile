@@ -162,11 +162,17 @@ function _co(depth, piece_array, last_moved)
 		move_to = move_data[2]
 		flag = move_data[3]
 
-		local piece = piece_array[move_from[1]][move_from[2]]
-
+		local piece = utils.deepcopy(piece_array[move_from[1]][move_from[2]])
 
 		-- Make move
 		piece:move(move_to, flag, piece_array, last_moved)
+		if flag then
+			print("FLAG: " .. flag)
+		end
+
+		-- if num_positions > 337 and piece.piece == "n" then
+		-- 	print(move_from[1], move_from[2], "--->", move_to[1], move_to[2], utils.get_equivalent(move_from[1], move_from[2]) - utils.get_equivalent(move_to[1], move_to[2]))
+		-- end
 		
 		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
 		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
@@ -174,9 +180,6 @@ function _co(depth, piece_array, last_moved)
 
 		-- Eval
 		num_positions = num_positions + _co(depth - 1, piece_array)
-		if num_positions > 337 and piece.piece == "n" then
-			print(move_from[1], move_from[2], "--->", move_to[1], move_to[2], utils.get_equivalent(move_from[1], move_from[2]) - utils.get_equivalent(move_to[1], move_to[2]))
-		end
 		coroutine.yield(num_positions)
 
 		-- Unmake
