@@ -406,112 +406,161 @@ end
 
 function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local valid, flag = false, nil
+	local dir_diff = diff
 	local diff = math.abs(diff)
 	local mod_9 = math.fmod(diff, 9)
 	local mod_7 = math.fmod(diff, 7)
+	
+	local ourx, oury = self.pos[1], self.pos[2]
+	local movex, movey = move[1], move[2]
+	local diffx, diffy = ourx - movex, oury - movey
 
-	-- Create a table of potentia valid moves based on our current position
-	local potential_valid_moves = {}
-	local x, y = self.pos[1], self.pos[2]
-	while x < 8 and y < 8 do
-		x = x + 1
-		y = y + 1
-		table.insert(potential_valid_moves, {x, y})
-	end
+	-- +7: 5,4 --> 4,5 3,6, opposite applies for -7
+	-- +9: 5,6 --> 3,4, opposite for -9
+	-- TODO: get all applicable squares for that direction between our pos and move pos
+	-- False if any pieces are in the way
+	local noEa = dir_diff % 7 == 0 and (diffx > 0 and diffy < 0)
+	local soWe = dir_diff % 7 == 0 and (diffx < 0 and diffy > 0)
 
-	x, y = self.pos[1], self.pos[2]
-	while x > 1 and y > 1 do
-		x = x - 1
-		y = y - 1
-		table.insert(potential_valid_moves, {x, y})
-	end	
+	local noWe = dir_diff % 9 == 0 and (diffx > 0 and diffy > 0)
+	local soEa = dir_diff % 9 == 0 and (diffx < 0 and diffy < 0)
 
-	x, y = self.pos[1], self.pos[2]
-	while x > 1 and y < 8 do
-		x = x - 1
-		y = y + 1
-		table.insert(potential_valid_moves, {x, y})
-	end
+	if noEa or soWe then
+		-- If ourx is less than movex, swap them to validate the while if condition
+		if ourx < movex then
+			local tempx, tempy = ourx, oury
+			ourx, oury = movex, movey
+			movex, movey = tempx, tempy
+		end
+		
+		-- while ourx > movex and oury < movey do
+		valid = true
+		while true do
+			ourx = ourx - 1
+			oury = oury + 1
+			if ourx <= movex and oury >= movey then break end
+			if array[ourx][oury] ~= nil then valid = false end
+		end
+		
+	elseif noWe or soEa then
 
-	x, y = self.pos[1], self.pos[2]
-	while x < 8 and y > 1 do
-		x = x + 1
-		y = y - 1
-		table.insert(potential_valid_moves, {x, y})
-	end
-
-	-- Look for the desired move in the potential_valid_moves, if we don't find it it's not valid
-	for i, potential_move in ipairs(potential_valid_moves) do
-		if potential_move[1] == move[1] and potential_move[2] == move[2] then
-			valid = true
+		if ourx < movex then
+			local tempx, tempy = ourx, oury
+			ourx, oury = movex, movey
+			movex, movey = tempx, tempy
+		end
+		
+		valid = true
+		while true do
+			ourx = ourx - 1
+			oury = oury - 1
+			if ourx <= movex and oury <= movey then break end
+			if array[ourx][oury] ~= nil then valid = false end
 		end
 	end
-
-	if valid == false then
-		return valid, flag
-	end
-
-
-	-- Look for any pieces that are in our path
-	local x, y = 0, 0
-	local x_max, y_max = 0, 0
-
-	-- If X isn't the same, then this might be a valid move. 
-	-- Because, otherwise that means the bishop is moving horizontally which is illegal
-	-- This is necessary because the diff from (X, 8) to (X, 1) is 7, which triggers mod_7 == 0
-	if self.pos[1] ~= move[1] then
-
-		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
-		if mod_9 == 0 then
-			-- valid = true
-			if self.pos[1] < move[1] then
-
-				x, y = self.pos[1] + 1, self.pos[2] + 1
-				x_max, y_max = move[1], move[2]
-
-			else
-				x, y = move[1] + 1, move[2] + 1
-				x_max, y_max = self.pos[1], self.pos[2]
-
-			end
-
-			while x < x_max and y < y_max do
-				local piece = array[x][y]
-				if piece ~= nil then
-					-- print(piece.name, x, y)
-					valid = false
-					goto b_capture_check
-				end
-				x = x + 1
-				y = y + 1
-			end
-
-		elseif mod_7 == 0 then
-			-- valid = true
-			if self.pos[1] < move[1] then
-
-				x, y = self.pos[1] + 1, self.pos[2] - 1
-				x_max, y_max = move[1], move[2]
-
-			else
-				x, y = move[1] + 1, move[2] - 1
-				-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
-				x_max, y_max = self.pos[1], self.pos[2]
-
-			end
-
-			while x < x_max and y < y_max or y > y_max do
-				local piece = array[x][y]
-				if piece ~= nil then
-					-- print(piece.name, x, y)
-					valid = false
-					goto b_capture_check
-				end
-				x = x + 1
-				y = y - 1
-			end
-		end
-	end
+	
+-- 	-- Create a table of potential valid moves based on our current position
+-- 	local potential_valid_moves = {}
+-- 	local x, y = self.pos[1], self.pos[2]
+-- 	while x < 8 and y < 8 do
+-- 		x = x + 1
+-- 		y = y + 1
+-- 		table.insert(potential_valid_moves, {x, y})
+-- 	end
+-- 
+-- 	x, y = self.pos[1], self.pos[2]
+-- 	while x > 1 and y > 1 do
+-- 		x = x - 1
+-- 		y = y - 1
+-- 		table.insert(potential_valid_moves, {x, y})
+-- 	end	
+-- 
+-- 	x, y = self.pos[1], self.pos[2]
+-- 	while x > 1 and y < 8 do
+-- 		x = x - 1
+-- 		y = y + 1
+-- 		table.insert(potential_valid_moves, {x, y})
+-- 	end
+-- 
+-- 	x, y = self.pos[1], self.pos[2]
+-- 	while x < 8 and y > 1 do
+-- 		x = x + 1
+-- 		y = y - 1
+-- 		table.insert(potential_valid_moves, {x, y})
+-- 	end
+-- 
+-- 	-- Look for the desired move in the potential_valid_moves, if we don't find it it's not valid
+-- 	for i, potential_move in ipairs(potential_valid_moves) do
+-- 		if potential_move[1] == move[1] and potential_move[2] == move[2] then
+-- 			valid = true
+-- 		end
+-- 	end
+-- 
+-- 	if valid == false then
+-- 		return valid, flag
+-- 	end
+-- 
+-- 
+-- 	-- Look for any pieces that are in our path
+-- 	local x, y = 0, 0
+-- 	local x_max, y_max = 0, 0
+-- 
+-- 	-- If X isn't the same, then this might be a valid move. 
+-- 	-- Because, otherwise that means the bishop is moving horizontally which is illegal
+-- 	-- This is necessary because the diff from (X, 8) to (X, 1) is 7, which triggers mod_7 == 0
+-- 	if self.pos[1] ~= move[1] then
+-- 
+-- 		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
+-- 		if mod_9 == 0 then
+-- 			-- valid = true
+-- 			if self.pos[1] < move[1] then
+-- 
+-- 				x, y = self.pos[1] + 1, self.pos[2] + 1
+-- 				x_max, y_max = move[1], move[2]
+-- 
+-- 			else
+-- 				x, y = move[1] + 1, move[2] + 1
+-- 				x_max, y_max = self.pos[1], self.pos[2]
+-- 
+-- 			end
+-- 
+-- 			while x < x_max and y < y_max do
+-- 				local piece = array[x][y]
+-- 				if piece ~= nil then
+-- 					-- print(piece.name, x, y)
+-- 					valid = false
+-- 					goto b_capture_check
+-- 				end
+-- 				x = x + 1
+-- 				y = y + 1
+-- 			end
+-- 
+-- 		elseif mod_7 == 0 then
+-- 			-- valid = true
+-- 			if self.pos[1] < move[1] then
+-- 
+-- 				x, y = self.pos[1] + 1, self.pos[2] - 1
+-- 				x_max, y_max = move[1], move[2]
+-- 
+-- 			else
+-- 				x, y = move[1] + 1, move[2] - 1
+-- 				-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
+-- 				x_max, y_max = self.pos[1], self.pos[2]
+-- 
+-- 			end
+-- 
+-- 			while x < x_max and y < y_max or y > y_max do
+-- 				local piece = array[x][y]
+-- 				if piece ~= nil then
+-- 					-- print(piece.name, x, y)
+-- 					valid = false
+-- 					goto b_capture_check
+-- 				end
+-- 				x = x + 1
+-- 				y = y - 1
+-- 			end
+-- 		end
+-- 	end
 
 	-- print(self.pos[1], self.pos[2], move[1], move[2])
 
