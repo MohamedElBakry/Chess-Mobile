@@ -153,9 +153,6 @@ function Piece:_undo_pretend_castle(rook, move, flag, array)
 	if flag == "castle_kingside" or flag == "castle_queenside" then
 		rook:move(rook.prevPos, nil, array, nil)
 		rook.hasMoved = false
-	-- elseif flag == "castle_queenside" then
-	-- 	rook:move(rook.prevPos, nil, array, nil)
-	-- 	rook.hasMoved = false
 	end
 
 	self:move(self.prevPos, nil, array, nil)
@@ -440,16 +437,41 @@ end
 
 function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called)
 	local valid, flag = false, nil
+	local dir_diff = diff
 	local diff = math.abs(diff)
 	local caller = called
 
-	if diff == 1 or diff == 7 or diff == 8 or diff == 9 then
+	local ourx, oury = self.pos[1], self.pos[2]
+	local movex, movey = move[1], move[2]
+	local diffx, diffy = ourx - movex, oury - movey
+
+	-- TODO: fix king jumping from 5, 8 to 6, 1
+	-- TODO fen string
+	local north = dir_diff == 8 and (diffx == 1 and diffy == 0)
+	local south = dir_diff == -8 and (diffx == -1 and diffy == 0)
+
+	local east = dir_diff == -1 and (diffx == 0 and diffy == -1)
+	local west = dir_diff == 1 and (diffx == 0 and diffy == 1)
+	
+	local noEa = dir_diff == 7 and (diffx == 1 and diffy == -1)
+	local soWe = dir_diff == -7 and (diffx == 0 and diffy == 1)
+	
+	local noWe = dir_diff == 9 and (diffx == 1 and diffy == 1)
+	local soEa = dir_diff == -9 and (diffx == -1 and diffy == 1)
+
+	if north or south or west or east or noEa or soWe or noWe or soEa then
 		valid = true
-		-- Ensure the king cannot jump from the 8th to the 1st column
-		if diff == 7 and self.pos[1] == move[1] then 
-			valid = false
-		end
 	end
+	
+	-- if diff == 1 or diff == 7 or diff == 8 or diff == 9 then
+	-- 	print(diff)
+	-- 	
+	-- 	valid = true
+	-- 	-- Ensure the king cannot jump from the 8th to the 1st column
+	-- 	if diff == 7 and self.pos[1] == move[1] then 
+	-- 		valid = false
+	-- 	end
+	-- end
 
 	-- Castling
 	-- If the king and the selected rook hasn't moved, and there are no pieces in between, then castle
@@ -493,19 +515,23 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 			array[self.pos[1]][self.pos[2]] = nil  -- Remove the previous position
 		end
 
+		-- Can any of the enemy pieces capture/check us in the new position/move? valid = false if so
 		local piece_valid, piece_flag 
 		for x = 1, 8 do
 			for y = 1, 8 do
 				local piece = array[x][y]
-				if piece ~= nil and piece ~= self.piece and piece.colour ~= self.colour then
+				if piece ~= nil and piece ~= self and piece.colour ~= self.colour then
 					piece_valid, piece_flag = piece:isValid(move, array, "internal")
 
 					-- Castling specific capture checks
 					if flag == "castle_kingside" then
-						piece_valid, piece_flag = piece:isValid({move[1], move[2] - 1}, array, "internal")
+						-- piece_valid, piece_flag = piece:isValid({move[1], move[2] - 1}, array, "internal")
+						piece_valid, piece_flag = piece:isValid(self.pos, array, "internal")
 
 					elseif flag == "castle_queenside" then
-						piece_valid, piece_flag = piece:isValid({move[1], move[2] + 2}, array, "internal")
+						-- piece_valid, piece_flag = piece:isValid({move[1], move[2] + 2}, array, "internal")
+						piece_valid, piece_flag = piece:isValid(self.pos, array, "internal")
+						
 					end
 
 					if piece_valid and piece_flag == "capture" then
