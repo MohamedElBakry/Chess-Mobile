@@ -454,30 +454,20 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	local west = dir_diff == 1 and (diffx == 0 and diffy == 1)
 	
 	local noEa = dir_diff == 7 and (diffx == 1 and diffy == -1)
-	local soWe = dir_diff == -7 and (diffx == 0 and diffy == 1)
+	local soWe = dir_diff == -7 and (diffx == -1 and diffy == 1)
 	
 	local noWe = dir_diff == 9 and (diffx == 1 and diffy == 1)
-	local soEa = dir_diff == -9 and (diffx == -1 and diffy == 1)
+	local soEa = dir_diff == -9 and (diffx == -1 and diffy == -1)
 
 	if north or south or west or east or noEa or soWe or noWe or soEa then
 		valid = true
-	end
-	
-	-- if diff == 1 or diff == 7 or diff == 8 or diff == 9 then
-	-- 	print(diff)
-	-- 	
-	-- 	valid = true
-	-- 	-- Ensure the king cannot jump from the 8th to the 1st column
-	-- 	if diff == 7 and self.pos[1] == move[1] then 
-	-- 		valid = false
-	-- 	end
 	-- end
 
 	-- Castling
 	-- If the king and the selected rook hasn't moved, and there are no pieces in between, then castle
-	-- Castle: king moves 2 places towards the rook and the rook is closer to the centre
 	-- 4 = Left, 3 = Right
-	if self.hasMoved == false and self.isChecked == false then
+	elseif self.hasMoved == false and self.isChecked == false then
+	-- if self.hasMoved == false and self.isChecked == false then
 		local piece = array[move[1]][move[2]]
 		if piece ~= nil and piece.piece == "r" and self.colour == piece.colour and piece.hasMoved == false then
 
@@ -502,7 +492,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 
 	-- Invalid moves: puts the king in check
 	local piece_valid
-	if caller == "external" then
+	if caller == "external" and valid then
 		-- Put the king in that position to allow enemy pieces to calculate piece:isValid
 		-- and remove him for the previous position temporarily
 		local temp_piece_or_rook
