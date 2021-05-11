@@ -3,24 +3,17 @@ require "utils-module.utils"
 
 SCALE = 0.45
 function init(self)
-
-	-- The 'acquire_input_focus' message directs this cursor GameObject to 
-	-- 'listen' to inputs, e.g, a touch or a mouse button press
+	-- Listen for input
 	msg.post(".", "acquire_input_focus")
 
-	self.collision_id = nil  -- ID of the game object that's been collided with
-	self.dragged_id = nil  -- ID of the game object that is actively being dragged
-	self.dragged_pos = nil  -- Postion of the game object being dragged
-	self.pressed = false  -- Boolean that indicates pressing or not
+	self.collision_id = nil 
+	self.dragged_id = nil  
+	self.dragged_pos = nil 
+	self.pressed = false  
 end
 
 
--- Called every frame
 function update(self, dt)
-	-- Clear?
-	-- 	msg.post("@render:", "clear_color",
-	-- 	{ color = vmath.vector4(95 /256, 129 / 256, 161 / 256, 1 ) })
-	-- 
 
 	-- 'Nilify' the collision id
 	self.collision_id = nil
@@ -29,10 +22,9 @@ end
 
 function on_message(self, message_id, message, sender)
 
-	-- When a collision message is received -- set self.collision_id to the id of 
-	-- the top-most game object which is pointed to (aka, colliding with) the cursor object
+	-- On collision, set the collision_id to be the highest z object (closest to the screen)
 	if message_id == hash("collision_response") then
-		print(self.collision_id)
+		-- print(self.collision_id)
 		if not self.collision_id or
 		go.get_position(self.collision_id).z < message.other_position.z then
 			self.collision_id = message.other_id
@@ -43,38 +35,29 @@ end
 
 function on_input(self, action_id, action)
 
-	-- Only process inputs which reflect a 'touch action' as defined within game.input_bindings
+	-- Only listen for 'touch' actions e.g. mouseclick and screen tap
 	if not action_id or action_id == hash("touch") then
 
-		-- Update the Defold cursor Game Object position to be the same as the current 
-		-- position of the machine cursor
+		-- Match the position of the 'fake' cursor game object to the real 'cursor'
 		local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
-		-- local action_pos = vmath.vector3(action.x, action.y, 0)
 		go.set_position(action_pos)
 
-		-- Revise script control variables; click/touch -- as pressed or released 
 		if action.pressed then
-			-- When the action reflects a press
 			msg.post("#collisionobject", "enable")
 			self.pressed = true
 
+		-- Drop and centre a piece on the square it's being hovered over
 		elseif action.released then
 
-			-- Reset the scale to 1.0 on Selected GameObject when released
-			-- local s1 = vmath.vector3(1.0, 1.0, 1.0)
-			local s1 = SCALE
-			go.set_scale(s1, self.collision_id)
-
-			-- Set the position to be the centre of the square a piece is dragged into
-			-- Get the board coordinates
+			-- Get the board coordinates from the click/tap position
 			local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
 			-- print(action_pos.x, action_pos.y, action.x, action.y)
 			
 			-- local board_coords = utils.px_to_xy({action.x, action.y})
 			local board_coords = utils.px_to_xy({action_pos.x, action_pos.y})
 			
-			print("Cursor board_coords:", board_coords[1], board_coords[2])
-			print("Dragged ID", self.dragged_id)
+			-- print("Cursor board_coords:", board_coords[1], board_coords[2])
+			-- print("Dragged ID", self.dragged_id)
 			
 			-- Send a message to main asking if this is a valid move
 			msg.post("/go_board#main", "is_valid", {id={self.dragged_id, {board_coords[1], board_coords[2]}}})
@@ -82,38 +65,30 @@ function on_input(self, action_id, action)
 			-- Multiply them by the square size to find the x y pos
 			local y = utils.get_px_from(utils.arr_coords[board_coords[1]]) -- Convert back from array coordinates to true coordiantes
 			local x = utils.get_px_from(board_coords[2])
-			print(x, y)
+			-- print(x, y)
 			go.set_position(vmath.vector3(x, y, 0), self.collision_id)
 
-			-- When the action reflects a release
+			
 			msg.post("#collisionobject", "disable")
 			self.pressed = false
 			self.dragged_id = nil
-			self.dragging = false
 		end
 
-		-- Upon a Click/Touch -- if the cursor has collided with another GameObject and
-		-- is not already dragging another GameObject -- then set dragged_id / dragged_pos
-		-- to the new GameObject's id
-
+		-- On collision with an object, if we're not already dragging one, pick up and drag this object
 		if self.pressed and self.collision_id and not self.dragged_id then
 			self.dragged_id = self.collision_id
 			self.dragged_pos = action_pos
 
-			-- Increase Scale for selected GameObject when selected
-			-- local s2 = vmath.vector3(1.2, 1.2, 1.0)
+			-- Increase the scale of the dragged object
 			local s2 = SCALE + 0.1
 			go.set_scale(s2, self.collision_id)
 		end
 
-		-- Set self.dragging to true if user has clicked a GameObject and moves it
-		if self.dragged_id and vmath.length(self.dragged_pos - action_pos) > 20 then
-			self.dragging = true
-		end
-
-		-- Update the position of a dragged GameObject
-		if self.dragging then
+		
+		-- Update the pos as we drag it
+		if self.dragged_id then
 			go.set_position(action_pos, self.dragged_id)
 		end
+		
 	end
 end

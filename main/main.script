@@ -39,13 +39,12 @@ function on_message(self, message_id, message)
 
 		-- TODO: check piece move validation
 		-- TODO: on piece click -- highlight valid moves
-		-- TODO: coroutine move --> show(piece_array)/display --> undo
-		-- print("positions: ***", ai.move_gen_test(1, piece_array, team_colour))
+		-- print("positions: ***", ai.move_gen_test(2, piece_array, team_colour))
 		
 		-- Cycle through all possible permutations up to depth n, and cancel the timer once reached
 		handle = timer.delay(0, true, function()
 			if coroutine.status(ai.co) == "suspended" then
-				print("positions: ******", coroutine.resume(ai.co, 0, piece_array, team_colour))
+				print("positions: ******", coroutine.resume(ai.co, 2, piece_array, team_colour))
 				-- show(piece_array)
 			else
 				timer.cancel(handle)
@@ -85,7 +84,9 @@ function on_message(self, message_id, message)
 
 		-- The king being in check overrides any move validation unless it's the king moving out of check
 		-- as the king validation function would prevent that from happening
-		valid = is_king_not_checkable(valid, move_to, piece, piece_array, flag)
+		if valid then
+			valid = is_king_not_checkable(valid, move_to, piece, piece_array, flag)
+		end
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
 		-- current_state, valid = get_turn(current_state, valid, piece.colour)

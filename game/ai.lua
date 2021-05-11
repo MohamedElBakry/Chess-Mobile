@@ -154,10 +154,11 @@ function _co(depth, piece_array, last_moved)
 
 	local moves = generate_moves(piece_array)
 	local num_positions = 0
+	local captures = 0
+	local castles = 0
 	local move_from, move_to, flag
-	local temp_landing_square
 
-	for i, move_data in ipairs(moves) do
+	for _, move_data in ipairs(moves) do
 		move_from = move_data[1]
 		move_to = move_data[2]
 		flag = move_data[3]
@@ -166,30 +167,25 @@ function _co(depth, piece_array, last_moved)
 
 		-- Make move
 		piece:move(move_to, flag, piece_array, last_moved)
-		if flag then
-			print("FLAG: " .. flag)
+
+		if flag == "capture" then
+			print("CAPTURE")
+			captures = captures + 1
+		elseif flag == "castle_kingside" or flag == "castle_queenside" then
+			castles = castles + 1
 		end
 
-		-- if num_positions > 337 and piece.piece == "n" then
-		-- 	print(move_from[1], move_from[2], "--->", move_to[1], move_to[2], utils.get_equivalent(move_from[1], move_from[2]) - utils.get_equivalent(move_to[1], move_to[2]))
-		-- end
-		
-		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
-		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
-		-- piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
-
 		-- Eval
-		num_positions = num_positions + _co(depth - 1, piece_array)
 		coroutine.yield(num_positions)
+		num_positions = num_positions + _co(depth - 1, piece_array)
+		-- coroutine.yield(num_positions)
 
 		-- Unmake
 		piece:undo_last_move(flag, piece_array)
-		-- piece_array[move_from[1]][move_from[2]] = utils.deepcopy(piece_array[move_to[1]][move_to[2]])  -- Move the original moving piece back
-		-- piece_array[move_to[1]][move_to[2]] = temp_landing_square
-
 	end
 
 	-- coroutine.yield(num_positions)
+	print("CAPTURES:", captures, "CASTLES:", castles)
 	return num_positions
 end
 

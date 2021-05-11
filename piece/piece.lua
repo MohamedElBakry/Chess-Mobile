@@ -1,6 +1,4 @@
-local utils = require "utils-module.utils"
-
--- This seems inefficient, so consider making more specific sub classes from Piece, e.g. Pawn, Knight, Queen ...
+local utils = utils or require "utils-module.utils"
 
 -- [[ Piece Class --]]
 
@@ -47,9 +45,6 @@ end
 
 
 --[[ Piece Methods ]]
-
--- TODO: Make it so that piece:move deals with the specific move flags too.
--- Add flag parameter
 function Piece:move(move, flag, piece_array, last_moved)
 	self.prevPos = self.pos
 	self.pos = move
@@ -81,7 +76,6 @@ function Piece:move(move, flag, piece_array, last_moved)
 
 	elseif flag == "capture" then
 		self.lastCaptured = utils.deepcopy(piece_array[move[1]][move[2]])
-
 		local captured_go_id = piece_array[move[1]][move[2]].id
 		msg.post(captured_go_id, "disable")
 
@@ -89,23 +83,12 @@ function Piece:move(move, flag, piece_array, last_moved)
 		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
 		self.pos = {move[1], move[2] - 1}
 		rook:move({self.pos[1], self.pos[2] - 1}, nil, piece_array, nil)
--- 		rook.pos = {self.pos[1], self.pos[2] - 1}
--- 		rook.hasMoved = true
--- 		piece_array[rook.pos[1]][rook.pos[2]] = rook
--- 		piece_array[rook.prevPos[1]][rook.prevPos[2]] = nil
--- 
 		rook:centre()
 
 	elseif flag == "castle_queenside" then
 		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
 		self.pos = {move[1], move[2] + 2}
 		rook:move({self.pos[1], self.pos[2] + 1 }, nil, piece_array, nil)
-		
-		-- rook.hasMoved = true
-		-- rook.pos = {self.pos[1], self.pos[2] + 1}
-		-- piece_array[rook.pos[1]][rook.pos[2]] = rook
-		-- piece_array[rook.prevPos[1]][rook.prevPos[2]] = nil
-
 		rook:centre()
 	end
 
@@ -148,7 +131,6 @@ function Piece:undo_last_move(flag, piece_array)
 end
 
 
--- TODO: edit self.pos and rook.pos in each if/elseif, then apply array[][] = X based on the .pos
 function Piece:_pretend_castle(move, flag, array)
 	local rook = utils.deepcopy(array[move[1]][move[2]])
 
@@ -156,21 +138,8 @@ function Piece:_pretend_castle(move, flag, array)
 		self:move({move[1], move[2] - 1}, nil, piece_array, nil)
 		rook:move({self.pos[1], self.pos[2] - 1}, nil, piece_array, nil)
 		
-		-- 'Pretend' to castle
--- 		array[move[1]][move[2] - 1] = self
--- 		array[move[1]][move[2] - 2] = rook
--- 
--- 		array[self.pos[1]][self.pos[2]] = nil
--- 		array[move[1]][move[2]] = nil
-
 	elseif flag == "castle_queenside" then
 		-- 'Pretend' to castle queenside
--- 		array[move[1]][move[2] + 2] = self
--- 		array[move[1]][move[2] + 1] = rook
--- 
--- 		array[self.pos[1]][self.pos[2]] = nil  -- Update the array with our new position
--- 		array[move[1]][move[2]] = nil
-
 		self:move({move[1], move[2] + 2}, nil, array, nil)
 		rook:move({self.pos[1], self.pos[2] + 1}, nil, array, nil)
 	end
@@ -181,32 +150,23 @@ end
 
 function Piece:_undo_pretend_castle(rook, move, flag, array)
 
-	if flag == "castle_kingside" then
-		-- local rook = array[move[1]][move[2] - 2]
+	if flag == "castle_kingside" or flag == "castle_queenside" then
 		rook:move(rook.prevPos, nil, array, nil)
 		rook.hasMoved = false
-		
-		-- array[move[1]][move[2] - 1] = nil  -- Remove the king
-		-- array[move[1]][move[2] - 2] = nil  -- Remove the rook
-	elseif flag == "castle_queenside" then
-		-- array[move[1]][move[2] + 2] = nil  -- Remove the king
-		-- array[move[1]][move[2] + 1] = nil  -- Remove the rook
-		-- local rook = array[move[1]][move[2] + 2]
-		rook:move(rook.prevPos, nil, array, nil)
-		rook.hasMoved = false
+	-- elseif flag == "castle_queenside" then
+	-- 	rook:move(rook.prevPos, nil, array, nil)
+	-- 	rook.hasMoved = false
 	end
 
 	self:move(self.prevPos, nil, array, nil)
 	self.hasMoved = false
-	-- array[move[1]][move[2]] = rook
-	-- array[self.pos[1]][self.pos[2]] = self
+
 end
 
 
 function Piece:centre()
 	local pos = vmath.vector3(utils.get_px_from(self.pos[2]), utils.get_px_from(utils.arr_coords[self.pos[1]]), 0)
 	go.set_position(pos, self.id)
-
 	go.set_scale(self.scale, self.id)
 end
 
@@ -234,7 +194,7 @@ function Piece:isValid(move, array, caller)
 	return valid, flag
 end
 
--- TODO: Pawn promotion: allowed to all piece except the king
+-- TODO: Pawn promotion: allowed to all pieces except the king
 function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
@@ -258,9 +218,25 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 		end
 	end
 
+	-- Regular move check
+	-- First move can be 2 squares or 1 square forward
+	if diff == moves.forward_one and landing_square_or_piece == nil then
+		valid = true
+		-- return valid, flag
+
+	elseif self.hasMoved == false and diff == moves.forward_one * 2 and landing_square_or_piece == nil then
+		if self.colour == "b" then
+			valid = array[move[1] - 1][move[2]] == nil
+		else
+			valid = array[move[1] + 1][move[2]] == nil
+		end
+		
+		-- return valid, flag
+	-- end
+
 	-- Capture check
-	-- Compare current pos with new desired pos for capture patterns
-	if landing_square_or_piece ~= nil then
+	-- if landing_square_or_piece ~= nil then
+	elseif landing_square_or_piece ~= nil then
 		local capture_diff = {self.pos[1] - move[1], self.pos[2] - move[2]}
 		local is_capture_right_pattern = capture_diff[1] == moves.capture_right_diff[1] and capture_diff[2] == moves.capture_right_diff[2]
 		local is_capture_left_pattern = capture_diff[1] == moves.capture_left_diff[1] and capture_diff[2] == moves.capture_left_diff[2]
@@ -270,11 +246,11 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 		and landing_square_or_piece.colour ~= self.colour then
 			valid = true
 			flag = "capture"
-			return valid, flag
+			-- return valid, flag
 		end
 
-	else
-	-- elseif landing_square_or_piece == nil then
+	-- else
+	elseif landing_square_or_piece == nil then
 		-- En passant
 		-- Diagonal capture behind a pawn directly to the left or right of us, which just moved 2 squares forward
 		if diff == moves.capture_right or diff == moves.capture_left then
@@ -297,20 +273,6 @@ function Piece:__isvalid_pawn(move, array, diff, landing_square_or_piece)
 					return valid, flag
 				end
 			end
-		end
-	end
-
-	-- Regular move check
-	-- First move can be 2 squares forward or 1 square
-	-- if diff == moves.forward_one and landing_square_or_piece == nil then
-	if diff == moves.forward_one and landing_square_or_piece == nil then
-		valid = true
-
-	elseif self.hasMoved == false and diff == moves.forward_one * 2 and landing_square_or_piece == nil then
-		if self.colour == "b" then
-			valid = array[move[1] - 1][move[2]] == nil
-		else
-			valid = array[move[1] + 1][move[2]] == nil
 		end
 	end
 
@@ -417,14 +379,13 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 
 	-- +7: 5,4 --> 4,5 3,6, opposite applies for -7
 	-- +9: 5,6 --> 3,4, opposite for -9
-	-- TODO: get all applicable squares for that direction between our pos and move pos
-	-- False if any pieces are in the way
 	local noEa = dir_diff % 7 == 0 and (diffx > 0 and diffy < 0)
 	local soWe = dir_diff % 7 == 0 and (diffx < 0 and diffy > 0)
 
 	local noWe = dir_diff % 9 == 0 and (diffx > 0 and diffy > 0)
 	local soEa = dir_diff % 9 == 0 and (diffx < 0 and diffy < 0)
 
+	-- Look for pieces that are between our start and end point
 	if noEa or soWe then
 		-- If ourx is less than movex, swap them to validate the while if condition
 		if ourx < movex then
@@ -458,111 +419,6 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			if array[ourx][oury] ~= nil then valid = false end
 		end
 	end
-	
--- 	-- Create a table of potential valid moves based on our current position
--- 	local potential_valid_moves = {}
--- 	local x, y = self.pos[1], self.pos[2]
--- 	while x < 8 and y < 8 do
--- 		x = x + 1
--- 		y = y + 1
--- 		table.insert(potential_valid_moves, {x, y})
--- 	end
--- 
--- 	x, y = self.pos[1], self.pos[2]
--- 	while x > 1 and y > 1 do
--- 		x = x - 1
--- 		y = y - 1
--- 		table.insert(potential_valid_moves, {x, y})
--- 	end	
--- 
--- 	x, y = self.pos[1], self.pos[2]
--- 	while x > 1 and y < 8 do
--- 		x = x - 1
--- 		y = y + 1
--- 		table.insert(potential_valid_moves, {x, y})
--- 	end
--- 
--- 	x, y = self.pos[1], self.pos[2]
--- 	while x < 8 and y > 1 do
--- 		x = x + 1
--- 		y = y - 1
--- 		table.insert(potential_valid_moves, {x, y})
--- 	end
--- 
--- 	-- Look for the desired move in the potential_valid_moves, if we don't find it it's not valid
--- 	for i, potential_move in ipairs(potential_valid_moves) do
--- 		if potential_move[1] == move[1] and potential_move[2] == move[2] then
--- 			valid = true
--- 		end
--- 	end
--- 
--- 	if valid == false then
--- 		return valid, flag
--- 	end
--- 
--- 
--- 	-- Look for any pieces that are in our path
--- 	local x, y = 0, 0
--- 	local x_max, y_max = 0, 0
--- 
--- 	-- If X isn't the same, then this might be a valid move. 
--- 	-- Because, otherwise that means the bishop is moving horizontally which is illegal
--- 	-- This is necessary because the diff from (X, 8) to (X, 1) is 7, which triggers mod_7 == 0
--- 	if self.pos[1] ~= move[1] then
--- 
--- 		-- Diagonally, ensure no pieces are present between the current pos and the desired pos
--- 		if mod_9 == 0 then
--- 			-- valid = true
--- 			if self.pos[1] < move[1] then
--- 
--- 				x, y = self.pos[1] + 1, self.pos[2] + 1
--- 				x_max, y_max = move[1], move[2]
--- 
--- 			else
--- 				x, y = move[1] + 1, move[2] + 1
--- 				x_max, y_max = self.pos[1], self.pos[2]
--- 
--- 			end
--- 
--- 			while x < x_max and y < y_max do
--- 				local piece = array[x][y]
--- 				if piece ~= nil then
--- 					-- print(piece.name, x, y)
--- 					valid = false
--- 					goto b_capture_check
--- 				end
--- 				x = x + 1
--- 				y = y + 1
--- 			end
--- 
--- 		elseif mod_7 == 0 then
--- 			-- valid = true
--- 			if self.pos[1] < move[1] then
--- 
--- 				x, y = self.pos[1] + 1, self.pos[2] - 1
--- 				x_max, y_max = move[1], move[2]
--- 
--- 			else
--- 				x, y = move[1] + 1, move[2] - 1
--- 				-- x_max, y_max = self.pos[1] - 1, self.pos[2] + 1
--- 				x_max, y_max = self.pos[1], self.pos[2]
--- 
--- 			end
--- 
--- 			while x < x_max and y < y_max or y > y_max do
--- 				local piece = array[x][y]
--- 				if piece ~= nil then
--- 					-- print(piece.name, x, y)
--- 					valid = false
--- 					goto b_capture_check
--- 				end
--- 				x = x + 1
--- 				y = y - 1
--- 			end
--- 		end
--- 	end
-
-	-- print(self.pos[1], self.pos[2], move[1], move[2])
 
 	::b_capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
@@ -708,7 +564,7 @@ function Piece:get_valid_moves(array)
 			move = {x, y}
 			valid, flag = self:isValid(move, array)
 
-			if self.piece ~= "k" then
+			if self.piece ~= "k" and valid then
 				valid = is_king_not_checkable(valid, move, self, array, flag)
 			end
 
@@ -717,10 +573,6 @@ function Piece:get_valid_moves(array)
 			end
 		end
 	end
-	
-	-- if self.piece == "n" and #valid_moves > 7 then
-	-- 	print("miscalc")
-	-- end
 	
 	return valid_moves
 end
@@ -732,11 +584,11 @@ function is_king_not_checkable(valid, move, moving_piece, array, flag)
 
 	local king = get_king(moving_piece.colour, array)
 
-	-- Make the move then check if the king can still be captured, then undo those changes regardless
 	if valid == false then
 		return false
 	end
 
+	-- Make the move then check if the king can still be captured, then undo those changes regardless
 	local temp_captured = utils.deepcopy(array[move[1]][move[2]])
 	array[move[1]][move[2]] = moving_piece
 	array[moving_piece.pos[1]][moving_piece.pos[2]] = nil
