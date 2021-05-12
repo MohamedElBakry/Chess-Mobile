@@ -130,7 +130,7 @@ function move_gen_test(depth, piece_array, last_moved)
 		local piece = piece_array[move_from[1]][move_from[2]]
 		
 		-- Make move
-		piece:move(move_to, flag, piece_array, last_moved)
+		piece:move(move_to, flag, piece_array, last_moved, true)
 		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
 		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
 		-- piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
@@ -167,7 +167,7 @@ function _co(depth, piece_array, last_moved)
 		local piece = utils.deepcopy(piece_array[move_from[1]][move_from[2]])
 
 		-- Make move
-		piece:move(move_to, flag, piece_array, last_moved)
+		piece:move(move_to, flag, piece_array, last_moved, false)
 
 		if flag == "capture" then
 			print("CAPTURE")

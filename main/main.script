@@ -36,21 +36,18 @@ function on_message(self, message_id, message)
 				
 			end
 		end
-
-		-- TODO: check piece move validation
-		-- TODO: on piece click -- highlight valid moves
-		-- print("positions: ***", ai.move_gen_test(2, piece_array, team_colour))
 		
 		-- Cycle through all possible permutations up to depth n, and cancel the timer once reached
-		handle = timer.delay(0, true, function()
-			if coroutine.status(ai.co) == "suspended" then
-				print("positions: ******", coroutine.resume(ai.co, 0, piece_array, team_colour))
-				-- show(piece_array)
-			else
-				timer.cancel(handle)
-			end
-		end)
-		
+		-- Chess Engine Performance test
+		-- handle = timer.delay(0, true, function()
+		-- 	if coroutine.status(ai.co) == "suspended" then
+		-- 		print("positions: ******", coroutine.resume(ai.co, 2, piece_array, team_colour))
+		-- 		-- show(piece_array)
+		-- 	else
+		-- 		timer.cancel(handle)
+		-- 	end
+		-- end)
+		-- 
 		-- print(ai.search(2, piece_array), "<---- SEARCH RESULT")
 	end
 	
@@ -71,7 +68,8 @@ function on_message(self, message_id, message)
 
 		-- Bounds check
 		if (move_to[1] < 1 or move_to[1] > 8) or (move_to[2] < 1 or move_to[2] > 8) then
-			centre(move_from, go_id, piece_array[move_from[1]][move_from[2]].scale)
+			piece_array[move_from[1]][move_from[2]]:centre()
+			-- centre(move_from, go_id, piece_array[move_from[1]][move_from[2]].scale)
 			print("Out of bounds")
 			return
 		end
@@ -89,7 +87,8 @@ function on_message(self, message_id, message)
 		end
 		
 		-- Final check that overrides all other checks to see if the correct team is moving a piece
-		-- current_state, valid = get_turn(current_state, valid, piece.colour)
+		current_state, valid = get_turn(current_state, valid, piece.colour)
+		
 		if valid then
 			get_king(piece.colour, piece_array).isChecked = false
 		end
@@ -109,15 +108,22 @@ function on_message(self, message_id, message)
 		-- CHECKMATE?
 		-- If the enemy king is in check, and has no valid moves,
 		-- and there are no moves by his pieces that will put him out of check, then there's a winner
-		local game_over = is_checkmate(piece.colour, piece_array)
-		if game_over and current_state == GAME_STATE.TURN_WHITE then
-			current_state = GAME_STATE.WIN_WHITE
+		local game_over, additional_flag = is_checkmate_or_stalemate(piece.colour, piece_array)
+		if additional_flag and additional_flag == "STALEMATE" then
+			current_state = GAME_STATE.STALEMATE
+			print("GAME OVER! Stalemate")
+			
+		-- If it's game over is true and it's white's turn then black wins, and the opposite applies
+		elseif game_over and current_state == GAME_STATE.TURN_WHITE then
+			current_state = GAME_STATE.WIN_BLACK
+			print("BLACK WINS!")
 			
 		elseif game_over and current_state == GAME_STATE.TURN_BLACK then
-			current_state = GAME_STATE.WIN_BLACK
+			current_state = GAME_STATE.WIN_WHITE
+			print("WHITE WINS!")
 		end
+		
 
-		-- Stalemate?
 	end
 
 	show(piece_array)
@@ -190,8 +196,8 @@ function get_piece_location(go_id)
 end
 
 
--- TODO: Stalemate: king has 0 moves, he isn't in check, and his pieces have 0 moves
-function is_checkmate(piece_colour, piece_array)
+function is_checkmate_or_stalemate(piece_colour, piece_array)
+	local game_over
 	
 	local enemy_colour = "w"
 	if piece_colour == "w" then
@@ -218,30 +224,38 @@ function is_checkmate(piece_colour, piece_array)
 	end
 
 	::is_checked::
-	if enemy_king.isChecked == false then
+	
+	if not enemy_king.isChecked then
 		print("The " .. enemy_colour .. " king is not threatend")
 		-- Stalemate if king has 0 valid moves and all his pieces have 0 valid moves
 		local all_pieces_moves
 		if table.getn(enemy_king:get_valid_moves(piece_array)) == 0 then
-			-- TODO: currently wrong -- for every row, return if the first piece of that row has valid moves
-			-- Change to every piece of that row
-			all_pieces_moves = utils.map(
-			function(row)
-				for x = 1, 8 do
-					local piece = row[x]
-					if piece ~= nil and piece.colour == enemy_colour then
-						print(piece.name)
-						return table.getn(piece:get_valid_moves(piece_array)) == 0 
-					end 
+
+			-- Do all pieces of that colour have 0 valid moves? stalemate if yes
+			game_over = true
+			local _piece
+			for x = 1, 8 do
+				for y = 1, 8 do 
+					_piece = piece_array[x][y]
+					if _piece and _piece.colour == enemy_colour then
+						if (#_piece:get_valid_moves(piece_array)) ~= 0 then -- get the length with '#'
+							game_over = false
+							break
+						end
+					end
 				end
-			end, piece_array)
+			end
+			
+			if game_over then
+				return true, "STALEMATE"
+			end
 			
 		end
 		
 		return false
-	end
+	-- end
 	
-	if table.getn(enemy_king:get_valid_moves(piece_array)) > 0 then
+	elseif table.getn(enemy_king:get_valid_moves(piece_array)) > 0 then
 		print("The king can escape")
 		return false
 	end
@@ -253,37 +267,43 @@ function is_checkmate(piece_colour, piece_array)
 	for x = 1, 8 do
 		for y = 1, 8 do
 			-- TODO: Clean up ifs
-			enemy_piece = piece_array[x][y]
 			-- if enemy_piece == nil then
 			-- 	goto continue
 			-- elseif enemy_piece.colour ~= enemy_king.colour then
 			-- 	goto continue 
 			-- end
-			
+
+			enemy_piece = piece_array[x][y]
 			if enemy_piece ~= nil and enemy_piece.colour == enemy_king.colour then
 				local piece_moves = enemy_piece:get_valid_moves(piece_array)
-				local any_valid_moves = false
-				for _, move in ipairs(piece_moves) do
+				-- local any_valid_moves = false
+				-- for _, move in ipairs(piece_moves) do
+				if (#piece_moves) > 0 then 
 
-					any_valid_moves = is_king_not_checkable(true, move, enemy_piece, piece_array)
-					if any_valid_moves == true then
-						print("NOT GAME OVER YET")
-						print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
-						game_over = false
-						return false
-					end
+					-- any_valid_moves = is_king_not_checkable(true, move, enemy_piece, piece_array)
+					print("NOT GAME OVER YET")
+					-- print(enemy_piece.name, enemy_piece.pos[1], enemy_piece.pos[2], "-->", move[1], move[2])
+					-- game_over = false
+					return false
 				end
 			end
 			-- ::continue::
 		end
 	end
+	print("GAME OVER!")
 	return true
 
 end
 
 
 function get_turn(current_state, valid, piece_colour)
-	if current_state == GAME_STATE.TURN_WHITE then
+	if current_state == GAME_STATE.STALEMATE then
+		valid = false
+
+	elseif current_state == GAME_STATE.WIN_WHITE or current_state == GAME_STATE.WIN_BLACK then
+		valid = false
+	
+	elseif current_state == GAME_STATE.TURN_WHITE then
 		-- If a (W)HITE piece is trying to make a valid move then allow it
 		valid = piece_colour == "w" and valid
 
@@ -295,44 +315,11 @@ function get_turn(current_state, valid, piece_colour)
 
 		-- If a (B)LACK piece is trying to make a valid move then allow it
 		valid = piece_colour == "b" and valid
+		
 		if valid then
 			current_state = GAME_STATE.TURN_WHITE
 		end
 	end
 	
 	return current_state, valid
-end
-
--- r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 
-function fen_str_to(piece_array, fen)
-
-	local len = #fen
-	local x, y, i = 0, 0, 0
-	local c 
-	while y < len do
-		i = i + 1
-		y = y + 1
-		c = string.sub(fen, i, i)
-		print(c)
-		if c == "/" then x = x + 1 end
-		local piece = piece_from(c, {x, y})
-		piece_array[x][y] = piece
-		
-	end
-	
-end
-
--- fen_str_to(piece_array, "anccasd")
-
-function piece_from(fen_c, pos)
-	
-	local colour = "w"
-	if string.gmatch(fen_c, "%u") then
-		colour = "b"
-	end
-	
-	local name = string.lower(fen_c) .. colour
-	local piece = utils.deepcopy(Piece:new(nil, name, pos, false))
-
-	return piece
 end

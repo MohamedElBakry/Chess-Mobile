@@ -45,7 +45,7 @@ end
 
 
 --[[ Piece Methods ]]
-function Piece:move(move, flag, piece_array, last_moved)
+function Piece:move(move, flag, piece_array, last_moved, hide_centre)
 	self.prevPos = self.pos
 	self.pos = move
 
@@ -82,28 +82,28 @@ function Piece:move(move, flag, piece_array, last_moved)
 	elseif flag == "castle_kingside" then
 		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
 		self.pos = {move[1], move[2] - 1}
-		rook:move({self.pos[1], self.pos[2] - 1}, nil, piece_array, nil)
-		rook:centre()
+		rook:move({self.pos[1], self.pos[2] - 1}, nil, piece_array, nil, hide_centre)
+		-- rook:centre()
 
 	elseif flag == "castle_queenside" then
 		local rook = utils.deepcopy(piece_array[move[1]][move[2]])
 		self.pos = {move[1], move[2] + 2}
-		rook:move({self.pos[1], self.pos[2] + 1 }, nil, piece_array, nil)
-		rook:centre()
+		rook:move({self.pos[1], self.pos[2] + 1 }, nil, piece_array, nil, hide_centre)
+		-- rook:centre()
 	end
 
 	piece_array[self.prevPos[1]][self.prevPos[2]] = nil  -- Clean up 
 	piece_array[self.pos[1]][self.pos[2]] = self
-	self:centre()
+	if not hide_centre then self:centre() end
 
 end
 
 
-function Piece:undo_last_move(flag, piece_array)
+function Piece:undo_last_move(flag, piece_array, hide_centre)
 
 	-- Move out of the way first, so that 'we' don't become overwritten by any of the following operations
 	local prev = self.prevHasMoved
-	self:move(self.prevPos, nil, piece_array, nil)
+	self:move(self.prevPos, nil, piece_array, nil, hide_centre)
 	self.hasMoved = prev
 	
 	if flag == "en_passant" or flag == "capture" then
@@ -117,13 +117,13 @@ function Piece:undo_last_move(flag, piece_array)
 	elseif flag == "castle_kingside" then
 		local rook = utils.deepcopy(piece_array[self.pos[1]][self.pos[2] - 1])
 
-		rook:move(rook.prevPos, nil, piece_array, nil)
+		rook:move(rook.prevPos, nil, piece_array, nil, hide_centre)
 		rook.hasMoved = false
 
 	elseif flag == "castle_queenside" then
 		local rook = utils.deepcopy(piece_array[self.pos[1]][self.pos[2] + 1])
 		
-		rook:move(rook.prevPos, nil, piece_array, nil)
+		rook:move(rook.prevPos, nil, piece_array, nil, hide_centre)
 		rook.hasMoved = false
 	end
 
