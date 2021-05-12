@@ -44,7 +44,7 @@ function on_message(self, message_id, message)
 		-- Cycle through all possible permutations up to depth n, and cancel the timer once reached
 		handle = timer.delay(0, true, function()
 			if coroutine.status(ai.co) == "suspended" then
-				print("positions: ******", coroutine.resume(ai.co, 2, piece_array, team_colour))
+				print("positions: ******", coroutine.resume(ai.co, 0, piece_array, team_colour))
 				-- show(piece_array)
 			else
 				timer.cancel(handle)
@@ -102,11 +102,7 @@ function on_message(self, message_id, message)
 
 		-- TODO: rename team_colour to last_moved_piece_by["colour"]
 		piece:move(move_to, flag, piece_array, team_colour)
-		
-		-- Centre the piece in case it glitches out and just hovers over the captured square
-		-- centre(piece.pos, piece.id, piece.scale)
 
-		-- ::castled::
 		-- Track the last moved piece for en passant
 		team_colour[piece.colour]["last_moved_piece_id"] = piece.id
 
@@ -122,12 +118,6 @@ function on_message(self, message_id, message)
 		end
 
 		-- Stalemate?
-		
-	-- else
-		-- If the move is invalid, just take the piece back to the move_from location
-		-- centre(move_from, piece.id, piece.scale)
-		
-	-- end
 	end
 
 	show(piece_array)
@@ -140,7 +130,7 @@ end
 
 function on_input(self, action_id, action)
 
-	-- Show the valid moves
+	--	Show the valid moves
 	-- if action_id == hash("touch") then
 	-- 	local action_pos = rendercam.screen_to_world_2d(action.screen_x, action.screen_y)
 	-- 	local board_coords = utils.px_to_xy({action_pos.x, action_pos.y})
@@ -150,7 +140,11 @@ function on_input(self, action_id, action)
 	-- 	end
 	-- 	
 	-- 	local piece = piece_array[board_coords[1]][board_coords[2]]
+	-- 	if not piece then
+	-- 		return
+	-- 	end
 	-- 	local moves = piece:get_valid_moves(piece_array)
+	-- 	utils.map(function(move) print(move[1][1], move[1][2], move[2]) end, moves)
 	-- end
 	
 	
@@ -177,17 +171,7 @@ function show(piece_array)
 end
 
 
--- function centre(piece_pos, piece_id, piece_scale)
--- 	local pos = vmath.vector3(utils.get_px_from(piece_pos[2]), utils.get_px_from(utils.arr_coords[piece_pos[1]]), 0)
--- 	go.set_position(pos, piece_id)
--- 
--- 	-- Change to piece.scale
--- 	go.set_scale(piece_scale, piece_id)
--- 	
--- end
-
 -- Validation helper function(s)
-
 function get_piece_location(go_id)
 	local move_from = {}
 
@@ -297,7 +281,7 @@ function is_checkmate(piece_colour, piece_array)
 
 end
 
--- TODO: rename this function
+
 function get_turn(current_state, valid, piece_colour)
 	if current_state == GAME_STATE.TURN_WHITE then
 		-- If a (W)HITE piece is trying to make a valid move then allow it
@@ -317,4 +301,38 @@ function get_turn(current_state, valid, piece_colour)
 	end
 	
 	return current_state, valid
+end
+
+-- r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 
+function fen_str_to(piece_array, fen)
+
+	local len = #fen
+	local x, y, i = 0, 0, 0
+	local c 
+	while y < len do
+		i = i + 1
+		y = y + 1
+		c = string.sub(fen, i, i)
+		print(c)
+		if c == "/" then x = x + 1 end
+		local piece = piece_from(c, {x, y})
+		piece_array[x][y] = piece
+		
+	end
+	
+end
+
+-- fen_str_to(piece_array, "anccasd")
+
+function piece_from(fen_c, pos)
+	
+	local colour = "w"
+	if string.gmatch(fen_c, "%u") then
+		colour = "b"
+	end
+	
+	local name = string.lower(fen_c) .. colour
+	local piece = utils.deepcopy(Piece:new(nil, name, pos, false))
+
+	return piece
 end

@@ -148,7 +148,7 @@ function Piece:_pretend_castle(move, flag, array)
 end
 
 
-function Piece:_undo_pretend_castle(rook, move, flag, array)
+function Piece:_undo_pretend_castle(rook, flag, array)
 
 	if flag == "castle_kingside" or flag == "castle_queenside" then
 		rook:move(rook.prevPos, nil, array, nil)
@@ -170,7 +170,9 @@ end
 function Piece:isValid(move, array, caller)
 	local valid = false
 	local flag = nil
-
+	
+	if move[1] == self.pos[1] and move[2] == self.pos[2] then return valid, flag end
+	
 	-- A variable to passed to isvalid_king to stop an infinite recursive self callback
 	local caller = caller or "external"
 
@@ -318,44 +320,84 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
 
+	-- TODO: rook validation
 	local diff = math.abs(diff)
 	local mod = math.fmod(diff, 8)  -- Calculate to see if a move is a multiple of 8
 	local upper = self.pos[1] * 8
 	local lower = upper - 7
 	local equiv = utils.get_equivalent(move[1], move[2])
 
-	-- Vertical
-	if mod == 0 then
-		valid = true
-		-- If no pieces are between the current pos and the desired move pos, its valid
-		-- self.pos --> desired move pos
-		for x = 1, 8 do
-			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
-				local piece = array[x][move[2]]
-				if piece ~= nil then
-					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
-					valid = false
-					goto r_capture_check
-				end
-			end
-		end
+	local dir_diff = diff
+	local ourx, oury = self.pos[1], self.pos[2]
+	local movex, movey = move[1], move[2]
 
-		-- Horizontal
-	elseif equiv <= upper and equiv >= lower then
-		valid = true
-		-- Check the row for any pieces that stand between the rook and the desired end location
-		for y = 1, 8 do
-			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
-				local piece = array[move[1]][y]
-				if piece ~= nil then
-					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
-					valid = false
-					goto r_capture_check
-				end
-			end
-		end
+	local noSo = dir_diff % 8 == 0 and ((ourx > movex or ourx < movex) and oury == movey)
+	local eaWe = dir_diff % 1 == 0 and (ourx == movex and (oury > movey or oury < movey))
 
+	if noSo then
+		valid = true
+		
+		if ourx < movex then
+			local tempx = ourx
+			ourx = movex
+			movex = tempx
+		end
+		
+		-- Find pieces in the way of our start and end pos by decrementing to the end
+		while true do
+			
+			ourx = ourx - 1
+			if ourx <= movex then break end
+			if array[ourx][oury] ~= nil then valid = false break end
+		end
+	elseif eaWe then
+		valid = true
+
+		if oury < movey then
+			local tempy = oury
+			oury = movey
+			movey = tempy
+		end
+		
+		while true do
+			oury = oury - 1
+			if oury <= movey then break end
+			if array[ourx][oury] ~= nil then valid = false break end
+		end
 	end
+	
+-- 	-- Vertical
+-- 	if mod == 0 then
+-- 		valid = true
+-- 		-- If no pieces are between the current pos and the desired move pos, its valid
+-- 		-- self.pos --> desired move pos
+-- 		for x = 1, 8 do
+-- 			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
+-- 				local piece = array[x][move[2]]
+-- 				if piece ~= nil then
+-- 					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
+-- 					valid = false
+-- 					goto r_capture_check
+-- 				end
+-- 			end
+-- 		end
+-- 
+-- 		-- Horizontal
+-- 	elseif equiv <= upper and equiv >= lower then
+-- 		valid = true
+-- 		-- Check the row for any pieces that stand between the rook and the desired end location
+-- 		for y = 1, 8 do
+-- 			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
+-- 				local piece = array[move[1]][y]
+-- 				if piece ~= nil then
+-- 					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
+-- 					valid = false
+-- 					goto r_capture_check
+-- 				end
+-- 			end
+-- 		end
+-- 
+-- 	end
 
 	::r_capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
@@ -397,7 +439,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			ourx = ourx - 1
 			oury = oury + 1
 			if ourx <= movex and oury >= movey then break end
-			if array[ourx][oury] ~= nil then valid = false end
+			if array[ourx][oury] ~= nil then valid = false break end
 		end
 		
 	elseif noWe or soEa then
@@ -413,7 +455,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			ourx = ourx - 1
 			oury = oury - 1
 			if ourx <= movex and oury <= movey then break end
-			if array[ourx][oury] ~= nil then valid = false end
+			if array[ourx][oury] ~= nil then valid = false break end
 		end
 	end
 
@@ -445,8 +487,6 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 	local movex, movey = move[1], move[2]
 	local diffx, diffy = ourx - movex, oury - movey
 
-	-- TODO: fix king jumping from 5, 8 to 6, 1
-	-- TODO fen string
 	local north = dir_diff == 8 and (diffx == 1 and diffy == 0)
 	local south = dir_diff == -8 and (diffx == -1 and diffy == 0)
 
@@ -503,6 +543,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 			temp_piece_or_rook = utils.deepcopy(array[move[1]][move[2]])  -- Copy the piece (or empty) we're about to move onto
 			array[move[1]][move[2]] = self  -- Move to the new position
 			array[self.pos[1]][self.pos[2]] = nil  -- Remove the previous position
+			-- self:move(move, nil, array, nil)
 		end
 
 		-- Can any of the enemy pieces capture/check us in the new position/move? valid = false if so
@@ -528,7 +569,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 
 						-- Remove the king from that 'imaginary' position
 						if flag == "castle_kingside" or flag == "castle_queenside" then
-							self:_undo_pretend_castle(temp_piece_or_rook, move, flag, array)
+							self:_undo_pretend_castle(temp_piece_or_rook, flag, array)
 						else
 							array[move[1]][move[2]] = temp_piece_or_rook
 							array[self.pos[1]][self.pos[2]] = self
@@ -542,7 +583,7 @@ function Piece:__isvalid_king(move, array, diff, landing_square_or_piece, called
 
 		-- Remove the king from that 'imaginary' position in case we haven't returned from the function
 		if flag == "castle_kingside" or flag == "castle_queenside" then
-			self:_undo_pretend_castle(temp_piece_or_rook, move, flag, array)
+			self:_undo_pretend_castle(temp_piece_or_rook, flag, array)
 			return valid, flag
 		else
 			array[move[1]][move[2]] = temp_piece_or_rook
@@ -598,6 +639,7 @@ end
 -- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check too if so
 function is_king_not_checkable(valid, move, moving_piece, array, flag)
 
+	-- TODO: move this outside the function so that it isn't called for every move unnecessarily
 	local king = get_king(moving_piece.colour, array)
 
 	if valid == false then
@@ -658,7 +700,7 @@ end
 
 
 function get_king(colour, array)
-	local king
+	local piece
 	for x = 1, 8 do
 		for y = 1, 8 do
 			piece = array[x][y]

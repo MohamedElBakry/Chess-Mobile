@@ -147,6 +147,9 @@ function move_gen_test(depth, piece_array, last_moved)
 	return num_positions
 end
 
+captures = 0
+castles = 0
+
 function _co(depth, piece_array, last_moved)
 	if depth == 0 then
 		return 1 
@@ -154,8 +157,6 @@ function _co(depth, piece_array, last_moved)
 
 	local moves = generate_moves(piece_array)
 	local num_positions = 0
-	local captures = 0
-	local castles = 0
 	local move_from, move_to, flag
 
 	for _, move_data in ipairs(moves) do
