@@ -14,7 +14,7 @@ width = window_width / 8
 height = window_height / 8
 
 -- width = height
-print(width, height, xoffset, yoffset)
+print(width, height)
 print("WINDOW SIZE:::::::::::::", window_width, window_height)
 
 function utils.px_to_xy(px)
@@ -64,7 +64,7 @@ function utils.enum(table)
 
 	local enum = {} 
 	for i, v in ipairs(table) do
-		-- If this is a new key, add it to the enum
+		-- Only if this is a new key, add it to the enum
 		if enum[v] == nil then
 			enum[v] = i
 		end

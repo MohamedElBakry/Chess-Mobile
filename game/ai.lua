@@ -6,26 +6,6 @@ AI Module
 Responsible for replying with moves
 -- ]]
 
--- Meta Class
--- Ai = {}
--- 
--- -- Derived Class
--- function Ai:new()
--- 
--- 	-- Initialise 'class'
--- 	setmetatable({}, Ai)
--- 
--- 	-- Attributes
--- 	self.pawn_value = 100
--- 	self.knight_value = 350
--- 	self.bishop_value = 350
--- 	self.rook_value = 525
--- 	self.queen_value = 1000
--- 	
--- 	return self
--- 	
--- end
-
 ai = ai or {}
 
 PAWN_VALUE = 100
@@ -129,19 +109,12 @@ function move_gen_test(depth, piece_array, last_moved)
 
 		local piece = piece_array[move_from[1]][move_from[2]]
 		
-		-- Make move
 		piece:move(move_to, flag, piece_array, last_moved, true)
-		-- temp_landing_square = utils.deepcopy(piece_array[move_to[1]][move_to[2]])
-		-- piece_array[move_to[1]][move_to[2]] = utils.deepcopy(piece_array[move_from[1]][move_from[2]]) -- Go to the square
-		-- piece_array[move_from[1]][move_from[2]] = nil  -- Remove the previous copy
 
-		-- Eval
 		num_positions = num_positions + move_gen_test(depth - 1, piece_array)
 
-		-- Unmake
 		piece:undo_last_move(flag, piece_array)
-		-- piece_array[move_from[1]][move_from[2]] = utils.deepcopy(piece_array[move_to[1]][move_to[2]])  -- Move the original moving piece back
-		-- piece_array[move_to[1]][move_to[2]] = temp_landing_square
+
 	end
 
 	return num_positions
@@ -177,7 +150,7 @@ function _co(depth, piece_array, last_moved)
 		end
 
 		-- Eval
-		coroutine.yield(num_positions)
+		-- coroutine.yield(num_positions)  -- Uncomment to see each move being played out briefly
 		num_positions = num_positions + _co(depth - 1, piece_array)
 		-- coroutine.yield(num_positions)
 

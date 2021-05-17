@@ -59,7 +59,7 @@ function Piece:move(move, flag, piece_array, last_moved, hide_centre)
 
 	if flag == "en_passant" then
 
-		-- local adjacent_pawn = piece_array[move[1] - 1][move[2]] or piece_array[move[1] + 1][move[2]]  -- Double check this to ensure the wrong pawn is not being targetted
+		-- local adjacent_pawn = piece_array[move[1] - 1][move[2]] or piece_array[move[1] + 1][move[2]]
 		-- Special case where we make this check near the beginning or end of the board
 		local adjacent_pawn
 		if move[1] ~= 1 and self.colour == "w" then
@@ -188,7 +188,6 @@ function Piece:isValid(move, array, caller)
 	end
 
 	valid, flag = valid_hash[self.piece](self, move, array, diff, landing_square_or_piece)
-	-- valid = is_king_not_checkable(valid, move, self, array)
 
 	return valid, flag
 end
@@ -293,7 +292,6 @@ function Piece:__isvalid_knight(move, array, diff, landing_square_or_piece)
 	local diffx, diffy = ourx - movex, oury - movey
 
 	-- Additional direction restraints
-	
 	local noEaEa = dir_diff == 10 and (diffx == 1 and diffy == 2)
 	local soWeWe = dir_diff == -10 and (diffx == -1 and diffy == -2)
 
@@ -320,9 +318,6 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 	local valid = false
 	local flag = nil
 
-	-- TODO: rook validation
-	local diff = math.abs(diff)
-	local mod = math.fmod(diff, 8)  -- Calculate to see if a move is a multiple of 8
 	local upper = self.pos[1] * 8
 	local lower = upper - 7
 	local equiv = utils.get_equivalent(move[1], move[2])
@@ -365,41 +360,7 @@ function Piece:__isvalid_rook(move, array, diff, landing_square_or_piece)
 			if array[ourx][oury] ~= nil then valid = false break end
 		end
 	end
-	
--- 	-- Vertical
--- 	if mod == 0 then
--- 		valid = true
--- 		-- If no pieces are between the current pos and the desired move pos, its valid
--- 		-- self.pos --> desired move pos
--- 		for x = 1, 8 do
--- 			if x > self.pos[1] and x < move[1] or x < self.pos[1] and x > move[1] then 
--- 				local piece = array[x][move[2]]
--- 				if piece ~= nil then
--- 					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
--- 					valid = false
--- 					goto r_capture_check
--- 				end
--- 			end
--- 		end
--- 
--- 		-- Horizontal
--- 	elseif equiv <= upper and equiv >= lower then
--- 		valid = true
--- 		-- Check the row for any pieces that stand between the rook and the desired end location
--- 		for y = 1, 8 do
--- 			if y > self.pos[2] and y < move[2] or y < self.pos[2] and y > move[2] then 
--- 				local piece = array[move[1]][y]
--- 				if piece ~= nil then
--- 					-- print(self.name, "PIECE IN BETWEEN:", piece.name)
--- 					valid = false
--- 					goto r_capture_check
--- 				end
--- 			end
--- 		end
--- 
--- 	end
 
-	::r_capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
 end
@@ -408,9 +369,6 @@ end
 function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 	local valid, flag = false, nil
 	local dir_diff = diff
-	local diff = math.abs(diff)
-	local mod_9 = math.fmod(diff, 9)
-	local mod_7 = math.fmod(diff, 7)
 	
 	local ourx, oury = self.pos[1], self.pos[2]
 	local movex, movey = move[1], move[2]
@@ -426,6 +384,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 
 	-- Look for pieces that are between our start and end point
 	if noEa or soWe then
+		valid = true
 		-- If ourx is less than movex, swap them to validate the while if condition
 		if ourx < movex then
 			local tempx, tempy = ourx, oury
@@ -433,8 +392,6 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			movex, movey = tempx, tempy
 		end
 		
-		-- while ourx > movex and oury < movey do
-		valid = true
 		while true do
 			ourx = ourx - 1
 			oury = oury + 1
@@ -443,6 +400,7 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 		end
 		
 	elseif noWe or soEa then
+		valid = true
 
 		if ourx < movex then
 			local tempx, tempy = ourx, oury
@@ -450,7 +408,6 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 			movex, movey = tempx, tempy
 		end
 		
-		valid = true
 		while true do
 			ourx = ourx - 1
 			oury = oury - 1
@@ -459,7 +416,6 @@ function Piece:__isvalid_bishop(move, array, diff, landing_square_or_piece)
 		end
 	end
 
-	::b_capture_check::
 	valid, flag = self:__capture_check(valid, flag, landing_square_or_piece)
 	return valid, flag
 
@@ -639,7 +595,7 @@ end
 -- Function: iterate over opposing pieces to see if they can 'capture' the king once we make our desired move -- put him in check too if so
 function is_king_not_checkable(valid, move, moving_piece, array, flag)
 
-	-- TODO: move this outside the function so that it isn't called for every move unnecessarily
+	-- TODO: pass this as a parameter to the function so that it isn't called for every move unnecessarily
 	local king = get_king(moving_piece.colour, array)
 
 	if valid == false then

@@ -17,9 +17,6 @@ function init(self)
 		piece_array[i] = {}
 	end
 
-	-- setup random seed for later
-	math.randomseed(os.time())
-
 	-- Initial piece setup 
 	local props
 	local piece_id
@@ -32,9 +29,9 @@ function init(self)
 			-- Set the piece position, for white and black
 			r_pos.x = utils.get_px_from(i)
 			if colour == "white" then
-				r_pos.y = utils.get_px_from(1) -- Y as the 1st rank from the bottom (0th Index hence 0.5)
+				r_pos.y = utils.get_px_from(1) -- Y as the 1st rank from the bottom
 			else
-				r_pos.y = utils.get_px_from(8) -- Y as the 8th rank from the bottom (7th Index)
+				r_pos.y = utils.get_px_from(8) -- Y as the 8th rank from the bottom
 			end
 
 			-- Set the piece object property to be the pi
@@ -50,7 +47,7 @@ function init(self)
 			-- Set up piece array representation
 			local p_name = string.sub(piece_name, 1, 1) .. string.sub(colour, 1, 1)
 			
-			-- So that knight is represented as 'nw' or 'nb'
+			-- So that knight is represented as 'nw' or 'nb' instead of kw which would clash with 'king white'
 			if piece_name == "knight" then
 				p_name = string.sub(piece_name, 2, 2) .. string.sub(colour, 1, 1)
 			end

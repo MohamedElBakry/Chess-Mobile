@@ -2,22 +2,6 @@ images {
   image: "/assets/chess-pack/board.png"
   sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
-images {
-  image: "/assets/chess-pieces/square brown dark_png_512px.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pieces/square brown light_png_512px.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pieces/square gray dark _png_512px.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
-images {
-  image: "/assets/chess-pieces/square gray light _png_512px.png"
-  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
-}
 margin: 0
 extrude_borders: 2
 inner_padding: 0
